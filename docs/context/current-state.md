@@ -4,9 +4,9 @@ Last updated: 2026-09-10
 
 ## Current phase
 
-**Financial core implementation with vertical-slice delivery**
+**Capture-first implementation with vertical-slice delivery**
 
-The engineering scaffold, household/wallet domain, and first household/wallet UI slice are complete. Issue #4 is now implementing trustworthy income, expense, wallet balances, and wallet transfers end to end across PostgreSQL, Go, REST, React, automated tests, and self-hosted E2E.
+The engineering scaffold, household/wallet domain and UI, and confirmed financial core are complete through Issue #4 / PR #16. Arta can now record income and expense, move money between wallets, derive wallet balances, and show household totals/history through the real self-hosted stack. The next execution target is Issue #5: quick capture and Transaction Inbox.
 
 ## Established
 
@@ -16,7 +16,7 @@ The engineering scaffold, household/wallet domain, and first household/wallet UI
 - Repository is the durable AI-native source of truth.
 - Product principle: **Low friction from installation to daily capture.**
 - Core transaction principle: **Capture now, classify later.**
-- Transaction Inbox remains a central later product concept.
+- Transaction Inbox is a central product concept and the next implementation target.
 - Wallet transfers are explicit transfers, not income + expense.
 - User-facing development follows the vertical-slice delivery rule in `AGENTS.md`.
 
@@ -40,7 +40,7 @@ The engineering scaffold, household/wallet domain, and first household/wallet UI
 
 ### Database
 - PostgreSQL 17
-- Goose SQL migrations
+- Goose SQL migrations through version 3
 - `sqlc` generation foundation
 - persistent Docker volume
 - real PostgreSQL integration tests
@@ -51,6 +51,9 @@ The engineering scaffold, household/wallet domain, and first household/wallet UI
 - Issue #2 / PR #10 completed the scaffold.
 - Issue #3 / PR #11 completed household and wallet domain foundations.
 - Issue #12 / PR #15 completed household onboarding and wallet management UI.
+- Issue #4 / PR #16 completed the confirmed transaction and wallet-transfer vertical slice.
+- Issue #4 was verified by GitHub Actions run `34383346717`; web, server, and self-hosted E2E all passed before merge.
+- PR #16 was squash-merged as commit `11b747c3bf54c524274b79d313f036f3961b5882`.
 
 ## Implemented household and wallet behavior
 
@@ -63,29 +66,42 @@ The engineering scaffold, household/wallet domain, and first household/wallet UI
 - UI can create, edit, archive, reopen, and display wallets.
 - Temporary browser-local subject identity remains an explicit bridge until full authentication/authorization exists.
 
-## Transaction and transfer slice
+## Implemented confirmed financial core
 
-Issue #4 introduces confirmed financial activity separately from the future quick-capture/Inbox model.
+Issue #4 establishes confirmed financial activity separately from the upcoming quick-capture/Inbox model.
 
-Implemented on the task branch:
-
-- `transactions` schema for `income` and `expense`.
-- `transfers` schema for one logical source-to-destination movement.
-- Exact integer minor-unit money representation using Go `int64` and PostgreSQL `BIGINT`.
-- Positive-amount validation.
-- Self-transfer rejection.
-- Same-household wallet scoping through service lookups.
-- Same-currency requirement for transfers; FX is out of scope.
+- `transactions` persist confirmed `income` and `expense` records.
+- `transfers` persist one logical source-to-destination wallet movement.
+- Monetary values use exact integer minor-unit representation: Go `int64` and PostgreSQL `BIGINT`; financial domain/persistence code does not use floating-point arithmetic.
+- Amounts must be strictly positive.
+- Self-transfers are rejected explicitly.
+- Source and destination wallets are resolved inside the same household.
+- Transfers currently require matching wallet currencies; FX is out of scope.
 - Archived wallets reject new financial activity.
-- Currency comes from the wallet rather than client input.
-- Wallet balance is derived from income - expense - outgoing transfer + incoming transfer; there is no mutable wallet balance column.
-- Household income/expense totals read only `transactions`, so transfers cannot inflate either total.
-- REST endpoints for creating transactions/transfers and retrieving finance overview/history.
-- React forms for income/expense and wallet transfers.
-- Wallet balance, household totals, and recent activity UI.
-- Domain tests, real PostgreSQL integration coverage, frontend tests, and expanded self-hosted Playwright flow.
+- Transaction/transfer currency is derived from wallet state rather than trusted from client input.
+- Wallet balance is derived from `income - expense - outgoing transfer + incoming transfer`; there is no mutable wallet-balance source of truth.
+- Household income and expense totals read only confirmed transactions, so wallet transfers cannot inflate household income or expense.
+- REST endpoints support creating income/expense, creating transfers, and reading finance overview/history.
+- React UI supports income/expense entry, wallet transfers, wallet balances, household totals, and recent activity.
+- Domain tests, real PostgreSQL integration coverage, frontend tests, and self-hosted Playwright cover the slice end to end.
 
-Issue #4 does not add transaction edit/delete behavior. Historical financial records continue to favor auditability over silent mutation.
+Verified example from the real self-hosted flow:
+
+```text
+BCA income       +1,000,000
+BCA expense        -250,000
+BCA -> Cash        -300,000
+---------------------------
+BCA balance         450,000
+Cash balance        300,000
+
+Household totals:
+income            1,000,000
+expense             250,000
+transfer excluded
+```
+
+Issue #4 intentionally does not add transaction edit/delete behavior. Historical financial records continue to favor auditability over silent mutation.
 
 ## Accepted MVP implementation architecture
 
@@ -123,7 +139,7 @@ Full login, household invitation, and authorization flows are not implemented ye
 - No blind last-write-wins for sensitive financial state
 - No CRDT/general distributed-database complexity for MVP
 
-Issue #4 is confirmed-finance behavior. Offline capture/sync remains future work and must not be conflated with these confirmed records.
+Confirmed financial records are now implemented. Issue #5 must keep incomplete capture/review state conceptually and operationally separate from those confirmed records.
 
 ## Distribution state
 
@@ -139,19 +155,20 @@ Docker Compose remains the first technical self-hosted path, not the final norma
 - Opening-balance and reconciliation semantics
 - Budgeting model
 - Goal funding model
-- Detailed quick-capture / Transaction Inbox persistence
+- Detailed quick-capture / Transaction Inbox persistence semantics
 - Automatic transaction capture implementation
 
 ## Current execution target
 
-Issue #4: **Transaction and wallet-transfer functionality as a vertical slice**.
+Issue #5: **Quick capture and Transaction Inbox**.
 
-Completion requires all GitHub Actions lanes to pass against the real self-hosted stack before merge.
+The next slice should make the product's defining principle real: a user can record incomplete transaction information with very low friction, keep it safely pending, and later classify/confirm it into the trustworthy financial core without losing provenance or creating duplicates.
 
 ## Next execution steps
 
-1. Verify and merge Issue #4 after web, server, and self-hosted E2E are green.
-2. Implement Issue #5 quick capture and Transaction Inbox as the next vertical slice.
-3. Keep confirmed transaction semantics separate from incomplete capture/review state.
-4. Resolve opening balance/reconciliation only with an explicit financial-domain decision.
-5. Defer generalized sync and automatic capture until the confirmed financial model is trustworthy.
+1. Implement Issue #5 quick capture and Transaction Inbox as a complete vertical slice.
+2. Keep incomplete capture/review state separate from confirmed transaction semantics.
+3. Use stable IDs and retry-safe/idempotent boundaries where the capture flow introduces offline or repeated writes.
+4. Keep Docker Compose plus all three CI lanes green as the capture slice is added.
+5. Resolve opening balance/reconciliation only through an explicit financial-domain decision when enough transaction context exists.
+6. Defer generalized synchronization and automatic capture integrations until the capture model itself is trustworthy.
