@@ -44,8 +44,8 @@ test('manages wallets, transactions, and transfers through the self-hosted stack
   await page.getByRole('button', { name: /transfer money/i }).click();
   await expect(page.getByText('Cash allocation')).toBeVisible();
 
-  const bcaCardBeforeEdit = page.getByRole('article').filter({ hasText: 'BCA Utama' });
-  const cashCardBeforeArchive = page.getByRole('article').filter({ hasText: 'Cash Rumah' });
+  const bcaCardBeforeEdit = page.locator('article.wallet-card').filter({ hasText: 'BCA Utama' });
+  const cashCardBeforeArchive = page.locator('article.wallet-card').filter({ hasText: 'Cash Rumah' });
   await expect(bcaCardBeforeEdit).toContainText('450.000');
   await expect(cashCardBeforeArchive).toContainText('300.000');
   await expect(page.getByText(/Transfers excluded/i)).toBeVisible();
@@ -56,10 +56,10 @@ test('manages wallets, transactions, and transfers through the self-hosted stack
   await editForm.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { name: 'BCA Keluarga' })).toBeVisible();
 
-  const cashCard = page.getByRole('article').filter({ hasText: 'Cash Rumah' });
+  const cashCard = page.locator('article.wallet-card').filter({ hasText: 'Cash Rumah' });
   await cashCard.getByRole('button', { name: 'Archive' }).click();
   await expect(page.getByText(/1 active wallet/i)).toBeVisible();
-  await expect(page.getByRole('article').filter({ hasText: 'Cash Rumah' }).getByText('Archived', { exact: true })).toBeVisible();
+  await expect(page.locator('article.wallet-card').filter({ hasText: 'Cash Rumah' }).getByText('Archived', { exact: true })).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
