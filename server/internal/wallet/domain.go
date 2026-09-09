@@ -23,11 +23,11 @@ const (
 )
 
 var (
-	ErrInvalidName       = errors.New("wallet name must be between 1 and 120 characters")
-	ErrInvalidType       = errors.New("wallet type must be cash, bank, e_wallet, or other")
-	ErrInvalidCurrency   = errors.New("currency must be a 3-letter uppercase code")
-	ErrInvalidHousehold  = errors.New("household id is required")
-	ErrWalletArchived    = errors.New("archived wallet cannot be modified")
+	ErrInvalidName      = errors.New("wallet name must be between 1 and 120 characters")
+	ErrInvalidType      = errors.New("wallet type must be cash, bank, e_wallet, or other")
+	ErrInvalidCurrency  = errors.New("currency must be a 3-letter uppercase code")
+	ErrInvalidHousehold = errors.New("household id is required")
+	ErrWalletArchived   = errors.New("archived wallet cannot be modified")
 )
 
 type Wallet struct {
@@ -37,7 +37,7 @@ type Wallet struct {
 	Type        Type       `json:"type"`
 	Currency    string     `json:"currency"`
 	Status      Status     `json:"status"`
-	ArchivedAt *time.Time `json:"archivedAt,omitempty"`
+	ArchivedAt  *time.Time `json:"archivedAt,omitempty"`
 }
 
 func New(householdID uuid.UUID, name string, walletType Type, currency string) (Wallet, error) {
