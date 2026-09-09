@@ -4,17 +4,40 @@
 
 Arta helps a household understand, organize, and intentionally use its money together without making financial recording feel like bookkeeping work.
 
+Arta should minimize friction across the entire product journey: from installing and starting the application to capturing and reviewing everyday transactions.
+
 ## Core problem
 
 Family finance apps fail when the data is incomplete. A major cause is capture friction: people postpone recording a purchase because entering wallet, category, amount, description, and other details at purchase time feels inconvenient. Later, they forget the transaction entirely.
 
-Arta treats reliable transaction capture as a first-class product problem.
+Friction can also begin before the first transaction. If installation, device requirements, dependencies, permissions, setup, or onboarding are burdensome, users may never reach the point where Arta can help them manage their finances.
 
-## Product principle
+Arta treats both product adoption and reliable transaction capture as first-class product problems.
+
+## Product principles
+
+### Low friction from installation to daily capture
+
+Arta should be easy to install, start, and use on ordinary consumer devices. Technical complexity should be absorbed by the product rather than imposed on the user.
+
+This means product and technical decisions should favor:
+
+- Simple installation with as few user steps as practical
+- No unnecessary user-managed runtimes or external dependencies
+- Reasonable storage, memory, CPU, battery, and network requirements
+- Compatibility with modest consumer hardware where practical
+- Short onboarding with progressive setup rather than mandatory configuration upfront
+- Permissions requested only when they are needed and their purpose is clear
+- Low-friction updates and upgrades
+- Graceful behavior under imperfect connectivity where feasible
+
+### Capture now, classify later
 
 > Capture now, classify later.
 
 A transaction should be able to enter Arta with the minimum information available and be enriched or confirmed later.
+
+The first principle reduces the effort required to begin and continue using Arta. The second minimizes the effort required at the moment a financial event needs to be captured.
 
 ## Product promise
 
@@ -34,19 +57,22 @@ The household model should not require members to be biologically related; a hou
 
 ## Product pillars
 
-### 1. Effortless capture
+### 1. Effortless adoption
+Reduce friction before the first transaction by keeping installation, device requirements, setup, onboarding, permissions, and updates as simple and lightweight as practical.
+
+### 2. Effortless capture
 Reduce the effort between making a transaction and getting it into the system.
 
-### 2. Review instead of recall
+### 3. Review instead of recall
 When details are incomplete, put transactions into an Inbox for later review instead of relying on the user to remember transactions from scratch.
 
-### 3. Shared clarity
+### 4. Shared clarity
 Members should be able to understand household money without turning the product into a surveillance tool.
 
-### 4. Intentional spending
+### 5. Intentional spending
 Budgets and goals connect everyday transactions to longer-term household priorities.
 
-### 5. Trustworthy records
+### 6. Trustworthy records
 Transfers, corrections, and balances must behave predictably so reports can be trusted.
 
 ## Potential capture mechanisms
