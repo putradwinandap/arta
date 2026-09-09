@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Status: **Partially selected.** The product topology, client strategy, and primary database are accepted; the concrete frontend/backend frameworks, sync protocol, authentication, and packaging are still being selected in Issue #1.
+Status: **MVP implementation architecture selected.** See `docs/architecture/decisions/ADR-004-mvp-technical-architecture.md`.
 
 ## Architecture goals
 
@@ -18,7 +18,45 @@ Arta should optimize for:
 - Safe AI-assisted development
 - Ability to evolve from MVP without premature distributed-system complexity
 
-## Accepted deployment direction
+## Selected MVP stack
+
+### Client
+- React
+- TypeScript
+- Vite
+- `vite-plugin-pwa`
+- IndexedDB
+- Dexie
+- Zod
+
+### Server
+- Go
+- `net/http`
+- `chi`
+- REST API
+- Modular monolith
+
+### Data
+- PostgreSQL
+- `pgx`
+- `sqlc`
+- SQL migrations using a lightweight migration tool selected during scaffold implementation
+
+### Authentication
+- Built-in self-hosted auth
+- Argon2id password hashing
+- Server-side sessions with secure HttpOnly cookies
+
+### Testing / delivery
+- Vitest
+- React Testing Library
+- Playwright
+- Go `testing`
+- Real PostgreSQL integration testing where practical
+- GitHub Actions
+- GitHub Releases
+
+## Deployment direction
 
 Arta is an **open-source, self-hosted-first** application. The normal production path is a household-controlled Arta deployment rather than a mandatory Arta-operated SaaS service.
 
@@ -29,40 +67,59 @@ Conceptually:
 ```text
                      Household-controlled deployment
 
-                 +-------------------------------+
-                 |          Arta Server          |
-                 |                               |
-                 |  API / domain application     |
-                 |             |                 |
-                 |             v                 |
-                 |        PostgreSQL             |
-                 +---------------+---------------+
-                                 ^
-                                 | sync / API
-                  +--------------+--------------+
-                  |                             |
-             PWA on phone                  PWA on desktop
-          local client state              local client state
+                 +----------------------------------+
+                 |            Arta Server           |
+                 |                                  |
+                 | Go + chi REST API                |
+                 | modular monolith                 |
+                 |                |                 |
+                 |                v                 |
+                 |   pgx/sqlc -> PostgreSQL         |
+                 +----------------+-----------------+
+                                  ^
+                                  | sync / API
+                  +---------------+---------------+
+                  |                               |
+             PWA on phone                    PWA on desktop
+     React/Vite + Dexie/IndexedDB     React/Vite + Dexie/IndexedDB
 ```
 
-The exact local client persistence and synchronization protocol is not yet selected. However, transaction capture should not unnecessarily fail merely because the self-hosted server is temporarily unreachable. Any eventual sync design must preserve financial correctness, retries/idempotency, provenance, and review semantics.
+The Go server may embed the built PWA assets so the core application can later be distributed as a cohesive server product.
+
+## Offline capture and synchronization
+
+Transaction capture should remain useful when the self-hosted server is temporarily unreachable.
+
+Initial synchronization principles:
+
+- Persist locally first where appropriate using IndexedDB/Dexie.
+- Use stable client-generated identifiers for locally-created records.
+- Retry writes safely using idempotent server behavior.
+- Do not use browser Background Sync as a correctness dependency; it may only be an optimization.
+- Do not silently duplicate financial records during retries.
+- Do not use blind last-write-wins for sensitive financial conflicts.
+- Keep the MVP sync engine deliberately small rather than introducing CRDTs or a general-purpose distributed database.
+
+Detailed sync endpoint and conflict rules will be refined during implementation and may receive a dedicated ADR.
 
 ## Distribution topology
 
-Arta should distinguish four experiences:
+Arta distinguishes four experiences:
 
 1. **Self-hosted end-user release** — primary product; installation/startup should minimize manual infrastructure work.
-2. **Power-user/server deployment** — container/CLI-oriented deployment may be provided for technical users.
+2. **Power-user/server deployment** — Docker Compose is the first supported technical deployment path.
 3. **Public demo** — disposable preview only; not a production hosted finance service.
 4. **Contributor environment** — source checkout and development dependencies; this must not be confused with normal installation.
 
 PostgreSQL is part of the accepted server architecture, but users should not be required to manually administer it for the default installation path when automation can reasonably handle initialization and migrations.
 
+The product roadmap should move from Docker Compose toward a lower-friction launcher/CLI/installer for normal users.
+
 ## Application shape
 
-Prefer a modular monolith for the first product unless a concrete requirement justifies additional services.
+Use a modular monolith for the MVP unless a concrete requirement justifies additional services.
 
-Potential logical modules:
+Logical modules:
 
 - Identity / authentication
 - Household and membership
@@ -75,7 +132,7 @@ Potential logical modules:
 - Reconciliation (future)
 - Capture integrations (future)
 
-These are domain boundaries, not a requirement to deploy separate services.
+These are domain boundaries, not separately deployed services.
 
 ## Core domain flow
 
@@ -102,29 +159,23 @@ Wallet transfers use explicit transfer semantics and must not be interpreted as 
 
 ## Data integrity principles
 
-- Use exact currency representation (for example integer minor units or an appropriate PostgreSQL numeric/integer representation selected with the implementation stack).
+- Use exact currency representation suitable for PostgreSQL and Go; never floating-point money arithmetic.
 - Financial mutations should be traceable.
 - Prefer explicit status transitions over silently discarding uncertain capture data.
 - Automatic capture must preserve provenance.
 - Domain rules should be enforced below the UI layer.
 - Offline/retried writes must not silently duplicate financial records.
 - Synchronization conflicts must be handled deliberately rather than with blind last-write-wins behavior for sensitive financial state.
+- Database behavior should remain explicit; `sqlc` is preferred over hiding core financial semantics behind a large ORM abstraction.
 
 ## Future native integration
 
 PWA-first does not mean browser-only forever. A future Android client or companion may provide OS-specific capabilities such as notification-based transaction capture and communicate with the same Arta domain/server model. Native functionality should be added when an OS capability justifies it rather than making native mobile installation a prerequisite for the core product.
 
-## Remaining stack selection
+## Decision record
 
-Issue #1 still needs to select and document:
+The implementation choice and alternatives are recorded in:
 
-- PWA/frontend framework
-- Backend language/runtime/framework
-- Self-hosted authentication/session model
-- Client local persistence technology
-- Synchronization protocol
-- Packaging/startup strategy
-- Testing toolchain
-- Public demo deployment strategy
+- `docs/architecture/decisions/ADR-004-mvp-technical-architecture.md`
 
-The accepted choices must be recorded in a dedicated ADR before the application scaffold is considered finalized.
+The next engineering step is Issue #2: scaffold the selected architecture and establish the first reproducible self-hosted runtime.
