@@ -4,58 +4,57 @@ Last updated: 2026-09-09
 
 ## Current phase
 
-**Engineering foundation / scaffold implementation**
+**Engineering foundation complete / financial core next**
 
-The MVP architecture from ADR-004 has now been scaffolded on branch `issue-2-scaffold` through Issue #2 and draft PR #10. Verification is performed through GitHub Actions before the issue is considered complete.
+Issue #2 and PR #10 completed the initial Arta application scaffold. The accepted MVP architecture is now implemented on `main` and verified through GitHub Actions, including a full self-hosted Docker Compose browser E2E path.
 
 ## Established
 
 - Product name: **Arta**
 - Product category: family / household finance management
-- Arta is **open source and self-hosted-first**; the project does not intend to require an Arta-operated SaaS backend for normal use.
+- Arta is **open source and self-hosted-first**; normal use does not require an Arta-operated SaaS backend.
 - Repository is the durable AI-native source of truth.
-- Primary product problem: transactions are often missed because recording them at purchase time creates friction.
-- Product adoption must also be low-friction: download, installation, device requirements, dependencies, setup, onboarding, permissions, and updates should not become barriers to using Arta.
 - Product principle: **Low friction from installation to daily capture.**
-- Product distribution principle: self-hosting should not require ordinary users to set up a development environment.
 - Core transaction principle: **Capture now, classify later.**
 - Technical complexity should be absorbed by the product rather than imposed on users where practical.
 - Transaction Inbox is a central product concept.
 - Wallet transfers are explicit transfers, not income + expense.
 
-## Implemented scaffold
+## Implemented engineering foundation
 
 ### Client / PWA
-- React + TypeScript + Vite application under `apps/web`
+- React + TypeScript + Vite under `apps/web`
 - `vite-plugin-pwa` manifest/service-worker build foundation
-- Dexie/IndexedDB local database foundation
-- Zod dependency ready for runtime validation
-- Vitest + React Testing Library test foundation
-- Production PWA container served through Nginx
+- Dexie/IndexedDB local persistence foundation
+- Zod available for runtime validation
+- Vitest + React Testing Library foundation
+- Production PWA served through Nginx in the current Compose topology
 
 ### Server
-- Go 1.27 modular-monolith foundation under `server`
-- `net/http` + `chi` routing
+- Go modular-monolith foundation under `server`
+- `net/http` + `chi`
+- REST API boundary
 - `/api/health` liveness endpoint
 - `/api/ready` PostgreSQL readiness endpoint
-- graceful HTTP shutdown
+- graceful shutdown
 - `pgx` PostgreSQL connection pool
-- Argon2id password hashing foundation
+- Argon2id password hashing
+- high-entropy session token and secure HttpOnly/SameSite cookie foundation
 
 ### Database
 - PostgreSQL 17 technical deployment
-- SQL-first migration files
-- Goose selected as migration tool in ADR-005
-- `sqlc` configuration and a trivial typed query definition
+- Goose SQL migrations, recorded in ADR-005
+- `sqlc` typed query generation
 - persistent PostgreSQL Docker volume
+- real PostgreSQL integration-test foundation
 
 ### Delivery / verification
 - Docker Compose starts PostgreSQL, applies migrations, starts the Go server, builds/serves the PWA, and exposes Arta on port 8080
 - PWA `/api/*` requests are proxied internally to the Go server
-- GitHub Actions verifies web typecheck/tests/build and backend database/toolchain/tests/build
-- Playwright E2E test foundation exists
-- contributor setup documented in `docs/development/setup.md`
-- draft PR #10 tracks the scaffold change and closes Issue #2 when merged
+- contributor/self-hosted technical setup is documented in `docs/development/setup.md`
+- GitHub Actions has three verification lanes: web, server, and self-hosted E2E
+- verified self-hosted E2E covers Compose build/startup, `/api/health`, `/api/ready`, the PWA root, Playwright browser behavior, and clean shutdown
+- Issue #2 is closed and PR #10 is merged
 
 ## Accepted MVP implementation architecture
 
@@ -64,14 +63,12 @@ The MVP architecture from ADR-004 has now been scaffolded on branch `issue-2-sca
 - TypeScript
 - Vite
 - `vite-plugin-pwa`
-- IndexedDB
-- Dexie
+- IndexedDB + Dexie
 - Zod
 
 ### Server
 - Go
-- `net/http`
-- `chi`
+- `net/http` + `chi`
 - REST API
 - Modular monolith
 
@@ -86,22 +83,28 @@ The MVP architecture from ADR-004 has now been scaffolded on branch `issue-2-sca
 - Argon2id password hashing
 - Server-side sessions with secure HttpOnly cookies
 
-The scaffold currently implements the password-hashing foundation. Full login/session/household authentication flows remain future product work.
+Full login, household invitation, membership, and authorization flows are not implemented yet.
 
 ### Offline/sync direction
 - Local-first capture where appropriate using IndexedDB/Dexie
 - Stable client-generated IDs
-- Idempotent retry-safe sync behavior
+- Idempotent retry-safe synchronization
 - No blind last-write-wins for sensitive financial state
-- No CRDT/general distributed-database complexity for the MVP
+- No CRDT/general distributed-database complexity for MVP
 
-The scaffold establishes local persistence only. The generalized transaction sync engine is intentionally not part of Issue #2.
+The scaffold establishes the local persistence boundary only. Transaction synchronization remains future implementation work.
+
+## Distribution state
+
+Docker Compose is the **first technical self-hosted path**, not the final low-friction normal-user installer.
+
+The product requirement remains to evolve toward a launcher/CLI/installer that hides infrastructure complexity from ordinary users. A public deployment, if provided, remains a disposable demo/preview rather than production SaaS.
 
 ## Developer/platform constraints
 
 - Primary development environment is Windows.
 - Primary personal mobile testing device is iPhone.
-- The PWA-first path remains testable without a Mac or iOS-native signing workflow.
+- The PWA-first path remains testable without requiring a Mac or iOS-native signing workflow.
 
 ## Repository foundation completed
 
@@ -114,7 +117,7 @@ The scaffold establishes local persistence only. The generalized transaction syn
 - Assumption/open-question register
 - GitHub task backlog
 - MVP implementation stack decision
-- Initial application scaffold on `issue-2-scaffold`
+- Initial application scaffold and CI/self-hosted verification
 
 ## Still to decide / refine
 
@@ -131,14 +134,14 @@ The scaffold establishes local persistence only. The generalized transaction syn
 
 ## Current execution target
 
-Issue #2: **Scaffold Arta application foundation**.
+Issue #3: **Household and wallet domain foundation**.
 
-The code scaffold exists. Remaining completion work is verification against its acceptance criteria and merging PR #10.
+The project should now move from infrastructure scaffolding into real financial-domain behavior while preserving the invariants and boundaries established in the repository documentation.
 
 ## Next execution steps
 
-1. Finish CI verification for the scaffold.
-2. Validate Docker Compose startup and PWA/API routing through the reproducible workflow.
-3. Merge PR #10 and close Issue #2 when acceptance criteria are satisfied.
-4. Begin the domain foundation with household, wallet, and transaction semantics.
-5. Build the minimal quick-capture -> Transaction Inbox -> confirm flow before advanced automation.
+1. Implement the household and wallet domain foundation through Issue #3.
+2. Implement transaction and wallet-transfer semantics through Issue #4.
+3. Implement quick capture and Transaction Inbox through Issue #5.
+4. Keep CI and self-hosted startup green as each domain slice is added.
+5. Defer generalized synchronization and automatic capture until the core financial model is trustworthy.
