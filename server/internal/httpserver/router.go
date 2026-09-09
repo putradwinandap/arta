@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/putradwinandap/arta/server/internal/finance"
 )
 
 func New(pool *pgxpool.Pool) http.Handler {
@@ -21,6 +23,19 @@ func New(pool *pgxpool.Pool) http.Handler {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+	})
+
+	financeHandler := financeHandlers{service: finance.NewService(pool)}
+	r.Route("/api/households", func(r chi.Router) {
+		r.Post("/", financeHandler.createHousehold)
+		r.Get("/{householdID}", financeHandler.getHousehold)
+		r.Route("/{householdID}/wallets", func(r chi.Router) {
+			r.Post("/", financeHandler.createWallet)
+			r.Get("/", financeHandler.listWallets)
+			r.Get("/{walletID}", financeHandler.getWallet)
+			r.Patch("/{walletID}", financeHandler.updateWallet)
+			r.Post("/{walletID}/archive", financeHandler.archiveWallet)
+		})
 	})
 
 	return r
