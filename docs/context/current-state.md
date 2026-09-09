@@ -6,7 +6,7 @@ Last updated: 2026-09-09
 
 **Financial core implementation**
 
-Issue #2 and PR #10 completed the initial Arta application scaffold. Issue #3 is now implementing the first real financial-domain slice: household membership and wallet lifecycle behavior.
+The initial engineering scaffold is complete, and Issue #3 / PR #11 delivered the first real financial-domain slice on `main`: household membership and wallet lifecycle behavior. The next execution target is transaction and wallet-transfer semantics in Issue #4.
 
 ## Established
 
@@ -53,13 +53,10 @@ Issue #2 and PR #10 completed the initial Arta application scaffold. Issue #3 is
 - PWA `/api/*` requests are proxied internally to the Go server
 - contributor/self-hosted technical setup is documented in `docs/development/setup.md`
 - GitHub Actions has three verification lanes: web, server, and self-hosted E2E
-- Issue #2 is closed and PR #10 is merged
+- Issue #2 / PR #10 completed the scaffold
+- Issue #3 / PR #11 completed the household and wallet domain foundation
 
-## Household and wallet domain implementation
-
-Issue #3 implementation exists on branch `issue-3-household-wallet` and is pending CI/PR verification before merge.
-
-Implemented domain decisions:
+## Implemented household and wallet domain
 
 - Household IDs are application-generated UUIDs.
 - Household names are trimmed, required, and limited to 120 characters.
@@ -67,7 +64,7 @@ Implemented domain decisions:
 - Membership links a household to an authentication `subject_id`; advanced roles and permissions remain out of scope.
 - A household can own multiple wallets.
 - Wallet types are `cash`, `bank`, `e_wallet`, and `other`.
-- Wallet currency is a three-letter uppercase code established at creation.
+- Wallet currency is normalized to a three-letter uppercase code and established at creation for this domain slice.
 - Wallet lifecycle is `active` -> `archived`.
 - Archived wallets remain readable but cannot be modified through the wallet update domain operation.
 - Archiving is a lifecycle transition rather than physical deletion.
@@ -77,9 +74,11 @@ Implemented server flows:
 
 - Create/read household
 - Create/list/read/update/archive wallet within household context
-- PostgreSQL migration for households, memberships, and wallets
+- PostgreSQL schema for households, memberships, and wallets through migration version 2
 - Domain unit tests
-- Real PostgreSQL integration coverage for household + multi-wallet + update/archive flow
+- Real PostgreSQL integration coverage for household + multi-wallet + update/archive behavior
+
+Issue #3 was verified by GitHub Actions run `34358170304`; web, server, and complete self-hosted E2E lanes all passed before PR #11 was merged.
 
 ## Accepted MVP implementation architecture
 
@@ -108,7 +107,7 @@ Implemented server flows:
 - Argon2id password hashing
 - Server-side sessions with secure HttpOnly cookies
 
-Full login, household invitation, and authorization flows are not implemented yet. Issue #3 only establishes the membership relationship needed by the financial domain.
+Full login, household invitation, and authorization flows are not implemented yet. The household domain currently establishes the membership relationship needed by later authentication/authorization work.
 
 ### Offline/sync direction
 - Local-first capture where appropriate using IndexedDB/Dexie
@@ -140,14 +139,14 @@ The product requirement remains to evolve toward a launcher/CLI/installer that h
 
 ## Current execution target
 
-Issue #3: **Household and wallet domain foundation**.
+Issue #4: **Transaction and wallet-transfer domain**.
 
-The implementation is ready for automated verification. It must not be considered complete until migrations, domain tests, PostgreSQL integration behavior, existing web/server checks, and self-hosted startup remain green.
+The next financial slice should establish exact-money transaction behavior and explicit transfer semantics while preserving the invariant that transfers are not household income or expense.
 
 ## Next execution steps
 
-1. Verify Issue #3 through CI and merge its PR only when acceptance criteria are satisfied.
-2. Implement transaction and wallet-transfer semantics through Issue #4.
-3. Implement quick capture and Transaction Inbox through Issue #5.
-4. Keep CI and self-hosted startup green as each domain slice is added.
+1. Implement transaction and wallet-transfer semantics through Issue #4.
+2. Implement quick capture and Transaction Inbox through Issue #5.
+3. Keep CI and self-hosted startup green as each domain slice is added.
+4. Resolve wallet balance/reconciliation semantics only when the transaction model provides enough context to do so explicitly.
 5. Defer generalized synchronization and automatic capture until the core financial model is trustworthy.
