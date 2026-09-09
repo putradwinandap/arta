@@ -4,9 +4,9 @@ Last updated: 2026-09-09
 
 ## Current phase
 
-**Financial core implementation**
+**Financial core implementation with vertical-slice delivery**
 
-The initial engineering scaffold is complete, and Issue #3 / PR #11 delivered the first real financial-domain slice on `main`: household membership and wallet lifecycle behavior. The next execution target is transaction and wallet-transfer semantics in Issue #4.
+The initial engineering scaffold is complete, Issue #3 / PR #11 delivered the household membership and wallet lifecycle foundation, and Issue #12 connects that foundation to Arta's first usable frontend workflow. After this slice, the next financial capability target remains transaction and wallet-transfer semantics in Issue #4.
 
 ## Established
 
@@ -19,6 +19,7 @@ The initial engineering scaffold is complete, and Issue #3 / PR #11 delivered th
 - Technical complexity should be absorbed by the product rather than imposed on users where practical.
 - Transaction Inbox is a central product concept.
 - Wallet transfers are explicit transfers, not income + expense.
+- User-facing development defaults to the vertical-slice delivery rule in `AGENTS.md`: complete the smallest usable end-to-end workflow rather than accumulating disconnected technical layers.
 
 ## Implemented engineering foundation
 
@@ -55,6 +56,7 @@ The initial engineering scaffold is complete, and Issue #3 / PR #11 delivered th
 - GitHub Actions has three verification lanes: web, server, and self-hosted E2E
 - Issue #2 / PR #10 completed the scaffold
 - Issue #3 / PR #11 completed the household and wallet domain foundation
+- Issue #12 is the first user-facing vertical slice connecting the existing household/wallet API to the React PWA
 
 ## Implemented household and wallet domain
 
@@ -79,6 +81,20 @@ Implemented server flows:
 - Real PostgreSQL integration coverage for household + multi-wallet + update/archive behavior
 
 Issue #3 was verified by GitHub Actions run `34358170304`; web, server, and complete self-hosted E2E lanes all passed before PR #11 was merged.
+
+## Household and wallet UI slice
+
+Issue #12 adds the first usable product workflow on top of the existing domain/API foundation:
+
+- Fresh-browser household onboarding.
+- Browser-local persistence of the current household ID so the same self-hosted browser can reopen it without copying identifiers manually.
+- Temporary browser-local subject UUID while full authentication/authorization remains unfinished; this is an explicit development bridge, not the final identity model.
+- Wallet list with active and archived lifecycle states.
+- Create wallet with name, type, and currency.
+- Edit active wallet name/type.
+- Archive wallet while preserving it as a visible read-only historical wallet.
+- Responsive loading, empty, and API error states.
+- Frontend tests and self-hosted Playwright coverage against the real API/PostgreSQL stack.
 
 ## Accepted MVP implementation architecture
 
@@ -107,7 +123,7 @@ Issue #3 was verified by GitHub Actions run `34358170304`; web, server, and comp
 - Argon2id password hashing
 - Server-side sessions with secure HttpOnly cookies
 
-Full login, household invitation, and authorization flows are not implemented yet. The household domain currently establishes the membership relationship needed by later authentication/authorization work.
+Full login, household invitation, and authorization flows are not implemented yet. The household UI currently uses a browser-local temporary subject identity only to exercise the already-accepted membership foundation. It must later be replaced by identity derived from an authenticated session.
 
 ### Offline/sync direction
 - Local-first capture where appropriate using IndexedDB/Dexie
@@ -139,14 +155,15 @@ The product requirement remains to evolve toward a launcher/CLI/installer that h
 
 ## Current execution target
 
-Issue #4: **Transaction and wallet-transfer domain**.
+Issue #12: **Household onboarding and wallet management UI**.
 
-The next financial slice should establish exact-money transaction behavior and explicit transfer semantics while preserving the invariant that transfers are not household income or expense.
+This slice turns the completed household/wallet backend foundation into an end-to-end usable workflow and establishes vertical-slice delivery in practice.
 
 ## Next execution steps
 
-1. Implement transaction and wallet-transfer semantics through Issue #4.
-2. Implement quick capture and Transaction Inbox through Issue #5.
-3. Keep CI and self-hosted startup green as each domain slice is added.
-4. Resolve wallet balance/reconciliation semantics only when the transaction model provides enough context to do so explicitly.
-5. Defer generalized synchronization and automatic capture until the core financial model is trustworthy.
+1. Complete and verify Issue #12 through frontend tests plus the real self-hosted E2E stack.
+2. Continue with Issue #4 using the same vertical-slice rule: transaction and wallet-transfer semantics should include the user-facing workflow required to make the slice usable.
+3. Implement quick capture and Transaction Inbox through Issue #5 as a later vertical slice.
+4. Keep CI and self-hosted startup green as each slice is added.
+5. Resolve wallet balance/reconciliation semantics only when the transaction model provides enough context to do so explicitly.
+6. Defer generalized synchronization and automatic capture until the core financial model is trustworthy.
