@@ -14,7 +14,10 @@ No application stack or production implementation has been selected yet.
 - Product category: family / household finance management
 - Repository is the durable AI-native source of truth.
 - Primary product problem: transactions are often missed because recording them at purchase time creates friction.
-- Core principle: **Capture now, classify later.**
+- Product adoption must also be low-friction: installation, device requirements, dependencies, setup, onboarding, permissions, and updates should not become barriers to using Arta.
+- Product principle: **Low friction from installation to daily capture.**
+- Core transaction principle: **Capture now, classify later.**
+- Technical complexity should be absorbed by the product rather than imposed on users where practical.
 - Transaction Inbox is a central product concept.
 - Wallet transfers are explicit transfers, not income + expense.
 - Initial MVP areas: household, wallets, transactions, quick capture, Transaction Inbox, budgets, goals, transfers, and basic reporting.
@@ -45,9 +48,24 @@ No application stack or production implementation has been selected yet.
 - Detailed transaction/capture persistence model
 - Automatic transaction capture implementation
 
+## Technical-stack evaluation constraints
+
+The MVP stack/client decision should explicitly consider:
+
+- Installation friction and number of steps required before first use
+- Need for user-managed runtimes or dependencies
+- Application size and resource requirements
+- Compatibility with modest consumer devices
+- Startup and everyday interaction responsiveness
+- Battery and network impact where relevant
+- Permission burden
+- Update/upgrade friction
+- Offline or degraded-connectivity behavior where feasible
+- Future path to low-friction or automatic Android transaction capture
+
 ## Next decision
 
-Select the MVP technical stack and delivery strategy based on product constraints, especially the future need for low-friction/automatic capture on mobile devices.
+Select the MVP technical stack and delivery strategy based on product constraints, especially low-friction adoption, ordinary-device accessibility, and the future need for low-friction/automatic capture on mobile devices.
 
 ## Next execution steps
 
