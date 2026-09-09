@@ -4,7 +4,7 @@ Last updated: 2026-09-09
 
 This file contains unresolved questions. Items here are **not accepted requirements** unless promoted into the appropriate product/architecture document or ADR.
 
-Resolved decisions should not remain listed as open questions. Current accepted platform direction is summarized in `docs/context/current-state.md` and will be finalized in a technical-stack ADR.
+Resolved decisions should not remain listed as open questions. Current accepted MVP implementation architecture is recorded in `docs/architecture/decisions/ADR-004-mvp-technical-architecture.md` and summarized in `docs/context/current-state.md`.
 
 ## Product
 
@@ -36,21 +36,25 @@ Accepted and therefore no longer open here:
 
 - Product distribution is self-hosted-first rather than mandatory SaaS.
 - MVP client strategy is PWA-first.
-- Primary server database is PostgreSQL.
+- Frontend stack is React + TypeScript + Vite with `vite-plugin-pwa`.
+- Client-local persistence uses IndexedDB through Dexie.
+- Backend uses Go + `net/http` + `chi` with a REST API and modular monolith shape.
+- Primary server database is PostgreSQL using `pgx` + `sqlc`.
+- MVP authentication uses built-in self-hosted auth with Argon2id password hashing and server-side HttpOnly-cookie sessions.
+- Docker Compose is the first supported technical deployment path.
+- Testing direction is Vitest/React Testing Library, Playwright, Go `testing`, and real PostgreSQL integration behavior where practical.
+- GitHub Actions is the CI direction and GitHub Releases is the release channel.
 - A usable installation/startup path is part of MVP.
 - A public online deployment, if provided, is a disposable demo/preview rather than hosted production Arta.
 
-Still open:
+Still open / implementation-detail decisions:
 
-- Which PWA/frontend framework best supports rapid AI-assisted development and the offline/client requirements?
-- Which backend language/runtime/framework best fits a lightweight self-hosted modular monolith?
-- What authentication/session approach provides household membership flows with minimal self-hosted complexity?
-- Which client-side persistence technology should back offline capture?
-- What synchronization protocol, idempotency strategy, and conflict model should be used?
-- What should the first supported packaging path be: Docker Compose, CLI/binary, installer, or a staged combination?
-- How should PostgreSQL initialization, migrations, backup, restore, and upgrades be made low-friction for end users?
-- Which testing toolchain should cover domain logic, API/integration behavior, PWA behavior, and sync correctness?
+- Which migration tool should be used during scaffold implementation (for example Goose or Tern)?
+- What exact sync endpoint contract, retry protocol, versioning model, and conflict-resolution rules should be used?
+- What should the next packaging step after Docker Compose be: Go CLI, launcher, native installer, or staged combination?
+- How should PostgreSQL backup, restore, and upgrades be made low-friction for end users?
 - Where/how should the public disposable demo be hosted?
+- Which optional observability/logging approach is appropriate without making self-hosting heavy?
 
 ## Process
 
