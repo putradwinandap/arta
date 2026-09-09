@@ -6,7 +6,7 @@ Last updated: 2026-09-09
 
 **Financial core implementation with vertical-slice delivery**
 
-The initial engineering scaffold is complete, Issue #3 / PR #11 delivered the household membership and wallet lifecycle foundation, and Issue #12 connects that foundation to Arta's first usable frontend workflow. After this slice, the next financial capability target remains transaction and wallet-transfer semantics in Issue #4.
+The initial engineering scaffold is complete. Issue #3 / PR #11 delivered the household membership and wallet lifecycle foundation, and Issue #12 / PR #15 completed Arta's first usable frontend vertical slice on top of it. The next execution target is transaction and wallet-transfer functionality through Issue #4, delivered with the same end-to-end vertical-slice rule.
 
 ## Established
 
@@ -56,7 +56,7 @@ The initial engineering scaffold is complete, Issue #3 / PR #11 delivered the ho
 - GitHub Actions has three verification lanes: web, server, and self-hosted E2E
 - Issue #2 / PR #10 completed the scaffold
 - Issue #3 / PR #11 completed the household and wallet domain foundation
-- Issue #12 is the first user-facing vertical slice connecting the existing household/wallet API to the React PWA
+- Issue #12 / PR #15 completed the first user-facing vertical slice connecting the household/wallet API to the React PWA
 
 ## Implemented household and wallet domain
 
@@ -84,7 +84,7 @@ Issue #3 was verified by GitHub Actions run `34358170304`; web, server, and comp
 
 ## Household and wallet UI slice
 
-Issue #12 adds the first usable product workflow on top of the existing domain/API foundation:
+Issue #12 / PR #15 completed the first usable product workflow on top of the existing domain/API foundation:
 
 - Fresh-browser household onboarding.
 - Browser-local persistence of the current household ID so the same self-hosted browser can reopen it without copying identifiers manually.
@@ -95,6 +95,8 @@ Issue #12 adds the first usable product workflow on top of the existing domain/A
 - Archive wallet while preserving it as a visible read-only historical wallet.
 - Responsive loading, empty, and API error states.
 - Frontend tests and self-hosted Playwright coverage against the real API/PostgreSQL stack.
+
+Issue #12 was verified by GitHub Actions run `34378138683`; web, server, and self-hosted E2E lanes all passed. The self-hosted E2E exercises household creation, multiple wallet creation, wallet editing, archiving, and browser reload against the real Compose/API/PostgreSQL stack.
 
 ## Accepted MVP implementation architecture
 
@@ -155,15 +157,14 @@ The product requirement remains to evolve toward a launcher/CLI/installer that h
 
 ## Current execution target
 
-Issue #12: **Household onboarding and wallet management UI**.
+Issue #4: **Transaction and wallet-transfer functionality as a vertical slice**.
 
-This slice turns the completed household/wallet backend foundation into an end-to-end usable workflow and establishes vertical-slice delivery in practice.
+The next slice must establish trustworthy exact-money income/expense and transfer semantics while also connecting the user-facing workflow needed to make that capability usable. A transfer remains one logical movement between wallets and must not inflate household income or expense.
 
 ## Next execution steps
 
-1. Complete and verify Issue #12 through frontend tests plus the real self-hosted E2E stack.
-2. Continue with Issue #4 using the same vertical-slice rule: transaction and wallet-transfer semantics should include the user-facing workflow required to make the slice usable.
-3. Implement quick capture and Transaction Inbox through Issue #5 as a later vertical slice.
-4. Keep CI and self-hosted startup green as each slice is added.
-5. Resolve wallet balance/reconciliation semantics only when the transaction model provides enough context to do so explicitly.
-6. Defer generalized synchronization and automatic capture until the core financial model is trustworthy.
+1. Implement Issue #4 as the next user-facing vertical slice, including the domain/persistence/API/UI/test layers required for a usable transaction and wallet-transfer workflow.
+2. Implement quick capture and Transaction Inbox through Issue #5 as a later vertical slice.
+3. Keep CI and self-hosted startup green as each slice is added.
+4. Resolve wallet balance/reconciliation semantics only when the transaction model provides enough context to do so explicitly.
+5. Defer generalized synchronization and automatic capture until the core financial model is trustworthy.
