@@ -2,6 +2,17 @@
 
 Status: Early product discovery. Requirements marked **MVP** are intended for the first usable product but may be refined through explicit decisions.
 
+## Distribution and installation
+
+- **MVP:** Arta is open source and self-hosted-first; normal use must not require an Arta-operated SaaS account or hosted financial-data backend.
+- **MVP:** A usable Arta release must include an installation/startup path in addition to contributor source-code instructions.
+- **MVP:** Normal end users must not be required to manually install the application's development toolchain just to use Arta.
+- **MVP:** Required server infrastructure, including PostgreSQL initialization/migrations, should be automated or guided by the supported deployment path as far as practical.
+- **MVP:** The primary client is a PWA usable from supported desktop and mobile browsers.
+- **MVP:** Household members should be able to access the household's Arta deployment from supported devices when the deployment is reachable.
+- **MVP:** Temporary loss of connectivity should not unnecessarily prevent transaction capture where the selected browser/platform permits reliable local persistence; synchronization behavior must preserve data integrity.
+- A public online instance may be provided as a disposable demo/preview, but it is not a production hosted Arta service and should discourage use of real financial data.
+
 ## Household
 
 - **MVP:** A user can belong to a household.
@@ -69,6 +80,7 @@ Post-MVP candidate:
 - Detect transaction-like events from supported sources, initially considering Android notifications.
 - Automatically captured data must remain reviewable.
 - The system must preserve capture source and confidence/provenance where relevant.
+- A future native Android client/companion may provide OS-specific capture while interoperating with the same Arta household/server model.
 
 ## Reporting
 
@@ -80,3 +92,5 @@ Post-MVP candidate:
 - Never store monetary values using imprecise floating-point semantics.
 - Destructive changes to historical financial records should be deliberate and auditable.
 - Automatic detection must not silently turn uncertain data into trusted financial truth.
+- Offline retries or synchronization must not silently create duplicate financial records.
+- Sensitive financial conflicts must be resolved deliberately rather than through an unsafe blind overwrite policy.
