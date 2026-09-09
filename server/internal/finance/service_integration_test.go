@@ -32,7 +32,9 @@ func TestHouseholdAndWalletPersistenceFlow(t *testing.T) {
 		t.Fatalf("CreateHousehold() error = %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = pool.Exec(context.Background(), `DELETE FROM households WHERE id = $1`, house.ID)
+		cleanupCtx := context.Background()
+		_, _ = pool.Exec(cleanupCtx, `DELETE FROM wallets WHERE household_id = $1`, house.ID)
+		_, _ = pool.Exec(cleanupCtx, `DELETE FROM households WHERE id = $1`, house.ID)
 	})
 
 	loadedHouse, err := service.GetHousehold(ctx, house.ID)
