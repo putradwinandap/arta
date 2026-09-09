@@ -1,0 +1,12 @@
+{
+  "name": "arta",
+  "private": true,
+  "workspaces": ["apps/web", "e2e"],
+  "scripts": {
+    "dev:web": "npm --workspace @arta/web run dev",
+    "build:web": "npm --workspace @arta/web run build",
+    "test:web": "npm --workspace @arta/web run test",
+    "typecheck:web": "npm --workspace @arta/web run typecheck",
+    "test:e2e": "npm --workspace @arta/e2e run test"
+  }
+}
