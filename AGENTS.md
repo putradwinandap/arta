@@ -70,6 +70,28 @@ Before finishing work:
 6. Keep commits scoped and descriptive.
 7. Summarize what changed, verification performed, and any remaining risks or questions.
 
+## Vertical slice delivery rule
+
+For user-facing product work, vertical slices are the default delivery model.
+
+**Implement the smallest end-to-end usable slice instead of completing one technical layer across many features.**
+
+A user-facing feature should include the layers required to make that slice genuinely usable and verifiable, which may include:
+
+- domain/business rules
+- PostgreSQL persistence and migrations
+- application/service behavior
+- REST API
+- frontend UX/UI
+- automated tests
+- end-to-end verification
+
+Do not declare a user-facing feature complete merely because its backend, database, or UI exists in isolation. Prefer completing one narrow workflow end to end before expanding adjacent capabilities.
+
+This rule does not require every Issue to touch every layer. Infrastructure, CI, security foundations, migrations, documentation, refactors, and architectural work may remain horizontal when that is the coherent nature of the task.
+
+When an earlier horizontal foundation already exists, the next relevant slice should connect it to a usable product workflow rather than continuing to accumulate disconnected backend capability.
+
 ## Documentation rules
 
 - Do not copy raw chat transcripts into the repository.
