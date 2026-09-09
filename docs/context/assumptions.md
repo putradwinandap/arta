@@ -4,6 +4,8 @@ Last updated: 2026-09-09
 
 This file contains unresolved questions. Items here are **not accepted requirements** unless promoted into the appropriate product/architecture document or ADR.
 
+Resolved decisions should not remain listed as open questions. Current accepted platform direction is summarized in `docs/context/current-state.md` and will be finalized in a technical-stack ADR.
+
 ## Product
 
 - Should one user be able to belong to multiple households?
@@ -16,10 +18,10 @@ This file contains unresolved questions. Items here are **not accepted requireme
 ## Capture
 
 - What is the fastest acceptable MVP capture interaction?
-- Is Android the initial priority because notification-based transaction detection may be strategically important?
 - Which Indonesian bank/e-wallet notifications are technically and legally practical to parse?
 - How should duplicate detection work when the same transaction arrives through multiple capture sources?
 - How should confidence and provenance be represented for automatically captured data?
+- What future Android-native/companion architecture best adds notification capture without duplicating core domain behavior?
 
 ## Wallets and reconciliation
 
@@ -30,10 +32,25 @@ This file contains unresolved questions. Items here are **not accepted requireme
 
 ## Technical
 
-- Web-first, mobile-first, or shared cross-platform client?
-- Which stack best supports both rapid AI-assisted development and future Android capture capabilities?
-- SQL database is likely appropriate for relational financial records, but the concrete database is undecided.
-- What authentication approach provides household invitation/membership flows with minimal complexity?
+Accepted and therefore no longer open here:
+
+- Product distribution is self-hosted-first rather than mandatory SaaS.
+- MVP client strategy is PWA-first.
+- Primary server database is PostgreSQL.
+- A usable installation/startup path is part of MVP.
+- A public online deployment, if provided, is a disposable demo/preview rather than hosted production Arta.
+
+Still open:
+
+- Which PWA/frontend framework best supports rapid AI-assisted development and the offline/client requirements?
+- Which backend language/runtime/framework best fits a lightweight self-hosted modular monolith?
+- What authentication/session approach provides household membership flows with minimal self-hosted complexity?
+- Which client-side persistence technology should back offline capture?
+- What synchronization protocol, idempotency strategy, and conflict model should be used?
+- What should the first supported packaging path be: Docker Compose, CLI/binary, installer, or a staged combination?
+- How should PostgreSQL initialization, migrations, backup, restore, and upgrades be made low-friction for end users?
+- Which testing toolchain should cover domain logic, API/integration behavior, PWA behavior, and sync correctness?
+- Where/how should the public disposable demo be hosted?
 
 ## Process
 
