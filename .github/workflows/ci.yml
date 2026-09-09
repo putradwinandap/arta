@@ -62,7 +62,8 @@ jobs:
         with:
           node-version: 24
       - run: npm install
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
       - run: docker compose up -d --build
       - name: Wait for Arta
         run: |

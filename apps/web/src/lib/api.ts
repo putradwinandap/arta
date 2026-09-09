@@ -5,6 +5,7 @@ export type Household = {
 
 export type WalletType = 'cash' | 'bank' | 'e_wallet' | 'other';
 export type WalletStatus = 'active' | 'archived';
+export type TransactionKind = 'income' | 'expense';
 
 export type Wallet = {
   id: string;
@@ -14,6 +15,30 @@ export type Wallet = {
   currency: string;
   status: WalletStatus;
   archivedAt?: string;
+};
+
+export type WalletBalance = {
+  walletId: string;
+  amountMinor: number;
+  currency: string;
+};
+
+export type Activity = {
+  id: string;
+  type: TransactionKind | 'transfer';
+  walletId?: string;
+  sourceWalletId?: string;
+  destinationWalletId?: string;
+  amountMinor: number;
+  currency: string;
+  occurredAt: string;
+  note?: string;
+};
+
+export type FinanceOverview = {
+  balances: WalletBalance[];
+  totals: { incomeMinor: number; expenseMinor: number };
+  activity: Activity[];
 };
 
 type ApiErrorBody = { error?: string };
@@ -75,4 +100,22 @@ export function archiveWallet(householdId: string, walletId: string) {
   return request<Wallet>(`/api/households/${householdId}/wallets/${walletId}/archive`, {
     method: 'POST',
   });
+}
+
+export function createTransaction(householdId: string, input: { walletId: string; kind: TransactionKind; amountMinor: number; note?: string }) {
+  return request(`/api/households/${householdId}/transactions`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function createTransfer(householdId: string, input: { sourceWalletId: string; destinationWalletId: string; amountMinor: number; note?: string }) {
+  return request(`/api/households/${householdId}/transfers`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function getFinanceOverview(householdId: string) {
+  return request<FinanceOverview>(`/api/households/${householdId}/finance`);
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/putradwinandap/arta/server/internal/finance"
 	"github.com/putradwinandap/arta/server/internal/household"
+	"github.com/putradwinandap/arta/server/internal/ledger"
 	"github.com/putradwinandap/arta/server/internal/wallet"
 )
 
@@ -147,6 +149,100 @@ func (h financeHandlers) archiveWallet(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, archived)
 }
 
+func (h financeHandlers) createTransaction(w http.ResponseWriter, r *http.Request) {
+	householdID, ok := pathUUID(w, r, "householdID")
+	if !ok {
+		return
+	}
+	var input struct {
+		WalletID    string      `json:"walletId"`
+		Kind        ledger.Kind `json:"kind"`
+		AmountMinor int64       `json:"amountMinor"`
+		OccurredAt  *time.Time  `json:"occurredAt"`
+		Note        string      `json:"note"`
+	}
+	if err := decodeJSON(r, &input); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+	walletID, err := uuid.Parse(input.WalletID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_wallet_id")
+		return
+	}
+	occurredAt := time.Now()
+	if input.OccurredAt != nil {
+		occurredAt = *input.OccurredAt
+	}
+	created, err := h.service.CreateTransaction(r.Context(), householdID, walletID, input.Kind, input.AmountMinor, occurredAt, input.Note)
+	if err != nil {
+		handleFinanceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
+}
+
+func (h financeHandlers) createTransfer(w http.ResponseWriter, r *http.Request) {
+	householdID, ok := pathUUID(w, r, "householdID")
+	if !ok {
+		return
+	}
+	var input struct {
+		SourceWalletID      string     `json:"sourceWalletId"`
+		DestinationWalletID string     `json:"destinationWalletId"`
+		AmountMinor         int64      `json:"amountMinor"`
+		OccurredAt          *time.Time `json:"occurredAt"`
+		Note                string     `json:"note"`
+	}
+	if err := decodeJSON(r, &input); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+	sourceID, err := uuid.Parse(input.SourceWalletID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_source_wallet_id")
+		return
+	}
+	destinationID, err := uuid.Parse(input.DestinationWalletID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_destination_wallet_id")
+		return
+	}
+	occurredAt := time.Now()
+	if input.OccurredAt != nil {
+		occurredAt = *input.OccurredAt
+	}
+	created, err := h.service.CreateTransfer(r.Context(), householdID, sourceID, destinationID, input.AmountMinor, occurredAt, input.Note)
+	if err != nil {
+		handleFinanceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
+}
+
+func (h financeHandlers) getFinanceOverview(w http.ResponseWriter, r *http.Request) {
+	householdID, ok := pathUUID(w, r, "householdID")
+	if !ok {
+		return
+	}
+	balances, err := h.service.WalletBalances(r.Context(), householdID)
+	if err != nil {
+		handleFinanceError(w, err)
+		return
+	}
+	totals, err := h.service.HouseholdTotals(r.Context(), householdID)
+	if err != nil {
+		handleFinanceError(w, err)
+		return
+	}
+	activity, err := h.service.ListActivity(r.Context(), householdID)
+	if err != nil {
+		handleFinanceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"balances": balances, "totals": totals, "activity": activity})
+}
+
 func pathUUID(w http.ResponseWriter, r *http.Request, key string) (uuid.UUID, bool) {
 	id, err := uuid.Parse(chi.URLParam(r, key))
 	if err != nil {
@@ -173,7 +269,8 @@ func handleFinanceError(w http.ResponseWriter, err error) {
 		errors.Is(err, wallet.ErrInvalidType) ||
 		errors.Is(err, wallet.ErrInvalidCurrency) ||
 		errors.Is(err, wallet.ErrInvalidHousehold) ||
-		errors.Is(err, wallet.ErrWalletArchived) {
+		errors.Is(err, wallet.ErrWalletArchived) ||
+		finance.IsLedgerInputError(err) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
