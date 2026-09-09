@@ -11,15 +11,16 @@ test('creates a household and manages wallets through the self-hosted stack', as
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
   await expect(page.getByRole('heading', { name: /no wallets yet/i })).toBeVisible();
 
-  await page.getByLabel('Wallet name', { exact: true }).fill('BCA Utama');
-  await page.getByLabel('Type', { exact: true }).selectOption('bank');
-  await page.getByLabel('Currency', { exact: true }).fill('IDR');
-  await page.getByRole('button', { name: /add wallet/i }).click();
+  const createPanel = page.locator('aside.create-panel');
+  await createPanel.getByLabel(/wallet name/i).fill('BCA Utama');
+  await createPanel.locator('select').selectOption('bank');
+  await createPanel.getByLabel(/currency/i).fill('IDR');
+  await createPanel.getByRole('button', { name: /add wallet/i }).click();
   await expect(page.getByRole('heading', { name: 'BCA Utama' })).toBeVisible();
 
-  await page.getByLabel('Wallet name', { exact: true }).fill('Cash Rumah');
-  await page.getByLabel('Type', { exact: true }).selectOption('cash');
-  await page.getByRole('button', { name: /add wallet/i }).click();
+  await createPanel.getByLabel(/wallet name/i).fill('Cash Rumah');
+  await createPanel.locator('select').selectOption('cash');
+  await createPanel.getByRole('button', { name: /add wallet/i }).click();
   await expect(page.getByRole('heading', { name: 'Cash Rumah' })).toBeVisible();
   await expect(page.getByText(/2 active wallets/i)).toBeVisible();
 
@@ -33,7 +34,7 @@ test('creates a household and manages wallets through the self-hosted stack', as
   await cashCard.getByRole('button', { name: 'Archive' }).click();
   await expect(page.getByText(/1 active wallet/i)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Cash Rumah' })).toBeVisible();
-  await expect(page.getByText('Archived', { exact: true })).toBeVisible();
+  await expect(cashCard.getByText('Archived', { exact: true })).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
