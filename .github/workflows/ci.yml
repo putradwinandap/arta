@@ -53,3 +53,34 @@ jobs:
       - run: test -z "$(gofmt -l .)"
       - run: go test ./...
       - run: go build ./cmd/arta
+
+  self-hosted-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: docker compose up -d --build
+      - name: Wait for Arta
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8080/api/health >/dev/null && curl --fail --silent http://127.0.0.1:8080/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs
+          exit 1
+      - run: npm run test:e2e
+        env:
+          ARTA_E2E_BASE_URL: http://127.0.0.1:8080
+      - name: Show compose status
+        if: always()
+        run: docker compose ps
+      - name: Stop compose stack
+        if: always()
+        run: docker compose down -v
