@@ -13,7 +13,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
       - run: npm install
       - run: npm run typecheck:web
       - run: npm run test:web
@@ -45,12 +44,12 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: '1.27.1'
-          cache-dependency-path: server/go.sum
+          cache: false
       - run: go mod tidy
       - run: go install github.com/pressly/goose/v3/cmd/goose@v3.27.3
       - run: goose -dir db/migrations postgres "$ARTA_DATABASE_URL" up
-      - run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+      - run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
       - run: sqlc generate
-      - run: gofmt -w . && git diff --exit-code
+      - run: test -z "$(gofmt -l .)"
       - run: go test ./...
       - run: go build ./cmd/arta
