@@ -75,6 +75,18 @@ Potential directions after validated usage:
 - Additional import/integration sources
 - Multi-household support if validated
 
+## Delivery model — vertical slices
+
+For user-facing work, roadmap phases describe capability order, but implementation should proceed as small vertical slices.
+
+A slice should connect as much of the real user workflow as required: domain rules, persistence, API, frontend UX, and verification. Prefer making one narrow workflow usable end to end over building several backend-only capabilities and postponing their UI.
+
+For example, once wallet domain/API foundations exist, prefer connecting household onboarding and wallet management to the frontend before accumulating unrelated financial-core backend features.
+
+Horizontal work remains appropriate when the outcome is inherently infrastructural or cross-cutting, such as CI, security foundations, migration tooling, packaging, refactoring, or architecture decisions.
+
 ## Roadmap rule
 
 Do not implement later-phase complexity simply because it is technically interesting. Each phase should validate the product assumptions required by the next one.
+
+For user-facing features, apply the vertical slice delivery rule in `AGENTS.md`: implement the smallest end-to-end usable slice and verify it before expanding adjacent capability.
