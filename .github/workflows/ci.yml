@@ -62,7 +62,18 @@ jobs:
         with:
           node-version: 24
       - run: npm install
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium
+        run: |
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "Playwright dependency installation failed on attempt ${attempt}; retrying after package-index refresh."
+            sudo rm -rf /var/lib/apt/lists/*
+            sudo apt-get clean
+            sleep 5
+          done
+          exit 1
       - run: docker compose up -d --build
       - name: Wait for Arta
         run: |
