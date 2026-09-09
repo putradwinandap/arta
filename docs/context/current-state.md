@@ -4,9 +4,9 @@ Last updated: 2026-09-09
 
 ## Current phase
 
-**Technical architecture selection and engineering foundation**
+**Engineering foundation / scaffold preparation**
 
-Several platform-level decisions are now accepted, while the complete implementation stack is still being selected.
+The MVP implementation architecture has been selected and recorded in `ADR-004-mvp-technical-architecture.md`. The next execution step is to scaffold the application foundation.
 
 ## Established
 
@@ -24,15 +24,61 @@ Several platform-level decisions are now accepted, while the complete implementa
 - Wallet transfers are explicit transfers, not income + expense.
 - Initial MVP areas: household, wallets, transactions, quick capture, Transaction Inbox, budgets, goals, transfers, and basic reporting.
 
-## Accepted technical / delivery direction
+## Accepted MVP implementation architecture
+
+### Client
+- React
+- TypeScript
+- Vite
+- `vite-plugin-pwa`
+- IndexedDB
+- Dexie
+- Zod
+
+### Server
+- Go
+- `net/http`
+- `chi`
+- REST API
+- Modular monolith
+
+### Database
+- PostgreSQL
+- `pgx`
+- `sqlc`
+- SQL migrations using a lightweight migration tool selected during scaffold implementation
+
+### Authentication
+- Built-in self-hosted authentication
+- Argon2id password hashing
+- Server-side sessions with secure HttpOnly cookies
+
+### Offline/sync direction
+- Local-first capture where appropriate using IndexedDB/Dexie
+- Stable client-generated IDs
+- Idempotent retry-safe sync behavior
+- No blind last-write-wins for sensitive financial state
+- No CRDT/general distributed-database complexity for the MVP
+
+### Packaging/testing/delivery
+- Docker Compose is the first supported technical self-hosted deployment path
+- Product roadmap moves toward lower-friction CLI/launcher/installer distribution
+- Vitest + React Testing Library for frontend tests
+- Playwright for end-to-end browser testing
+- Go `testing` for backend tests
+- Real PostgreSQL integration behavior tested where practical
+- GitHub Actions for CI
+- GitHub Releases for distribution artifacts
+
+## Accepted delivery direction
 
 - **PWA-first** is the accepted MVP client strategy.
 - **PostgreSQL** is the accepted primary server database.
 - The primary product is a downloadable/self-hosted deployment controlled by the user/household.
 - The MVP must provide an installation/startup path in addition to contributor source-code setup.
 - End users should not need to manually install the application's development dependencies just to use Arta.
-- Docker/CLI/binary/installer packaging remains to be finalized, but low-friction startup is an MVP requirement.
-- The PWA should tolerate temporary loss of connectivity for capture where feasible; the exact local persistence and synchronization protocol remains to be designed.
+- Docker Compose is the first supported technical deployment path, but it is not considered the final normal-user installation experience.
+- The PWA should tolerate temporary loss of connectivity for capture where feasible.
 - A public online deployment may exist as a **demo/preview only**, with disposable/demo data and without being positioned as Arta's production SaaS offering.
 - Future Android-native capability may complement the PWA for OS-specific automatic capture such as notification access; it is not required for the core MVP client.
 
@@ -48,58 +94,50 @@ Several platform-level decisions are now accepted, while the complete implementa
 - Product vision and requirements
 - Product glossary and conceptual flows
 - Architecture principles and conceptual data model
-- Initial ADRs
+- ADR-001 through ADR-004
 - Roadmap and MVP definition
 - Assumption/open-question register
 - GitHub task backlog
+- MVP implementation stack decision
 
-## Still to decide
+## Still to decide / refine
 
-- Concrete PWA/frontend framework
-- Backend language/runtime/framework
-- Self-hosted authentication/session approach
+These are implementation-detail or domain decisions, not blockers to starting the scaffold:
+
+- Exact SQL migration tool (for example Goose or Tern)
 - Detailed permissions model
-- Offline/local client persistence implementation
-- Synchronization protocol and conflict/idempotency strategy
-- Packaging/startup strategy: Docker Compose, CLI/binary, installer, or staged combination
-- Testing toolchain
-- Public demo hosting/deployment approach
+- Detailed sync endpoint contract and conflict rules
+- Packaging evolution from Docker Compose toward CLI/launcher/installer
+- Public demo hosting/deployment provider
 - Wallet balance/reconciliation strategy
 - Budgeting model
 - Goal funding model
 - Detailed transaction/capture persistence model
 - Automatic transaction capture implementation
 
-## Technical-stack evaluation constraints
+## Current execution target
 
-The remaining MVP stack decisions should explicitly consider:
+Issue #2: **Scaffold Arta application foundation**.
 
-- Self-hosted-first distribution
-- Installation friction and number of steps required before first use
-- No mandatory third-party cloud account for normal end-user operation
-- Need for user-managed runtimes or dependencies
-- PostgreSQL packaging, initialization, migrations, backup, and upgrades
-- Application size and resource requirements
-- Compatibility with modest consumer devices
-- Startup and everyday interaction responsiveness
-- Household access from multiple devices
-- Battery and network impact where relevant
-- Permission burden
-- Update/upgrade friction
-- Offline or degraded-connectivity capture behavior
-- Data integrity during synchronization/retries
-- Future path to Android notification-based automatic capture
-- AI-assisted development speed and maintainability
+The scaffold should establish:
 
-## Next decision
-
-Complete Issue #1 by comparing viable implementation approaches and selecting the concrete frontend, backend, authentication, sync, packaging, testing, and demo deployment strategy around the already accepted PWA-first + PostgreSQL + self-hosted-first direction.
+- React + TypeScript + Vite PWA
+- Dexie/IndexedDB foundation
+- Go + chi server
+- PostgreSQL
+- `pgx` + `sqlc`
+- migrations
+- auth/session foundation
+- Docker Compose
+- test foundations
+- GitHub Actions CI
+- documented contributor and self-hosted startup paths
 
 ## Next execution steps
 
-1. Compare at least two viable implementation stacks and packaging approaches.
-2. Select the complete MVP stack and record it in a new ADR.
-3. Update architecture documentation with the selected runtime and deployment topology.
-4. Scaffold the selected application architecture, PostgreSQL migrations, CI, and self-hosted startup path.
+1. Scaffold the selected architecture through Issue #2.
+2. Validate reproducible PostgreSQL startup and migrations.
+3. Validate PWA access from supported desktop/mobile browsers.
+4. Establish CI and test foundations.
 5. Implement the domain foundation starting with household/wallet/transaction semantics.
 6. Build the minimal quick-capture -> Transaction Inbox -> confirm flow before advanced automation.
