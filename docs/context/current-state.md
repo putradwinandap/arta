@@ -4,9 +4,9 @@ Last updated: 2026-09-09
 
 ## Current phase
 
-**Engineering foundation complete / financial core next**
+**Financial core implementation**
 
-Issue #2 and PR #10 completed the initial Arta application scaffold. The accepted MVP architecture is now implemented on `main` and verified through GitHub Actions, including a full self-hosted Docker Compose browser E2E path.
+Issue #2 and PR #10 completed the initial Arta application scaffold. Issue #3 is now implementing the first real financial-domain slice: household membership and wallet lifecycle behavior.
 
 ## Established
 
@@ -44,7 +44,7 @@ Issue #2 and PR #10 completed the initial Arta application scaffold. The accepte
 ### Database
 - PostgreSQL 17 technical deployment
 - Goose SQL migrations, recorded in ADR-005
-- `sqlc` typed query generation
+- `sqlc` typed query generation foundation
 - persistent PostgreSQL Docker volume
 - real PostgreSQL integration-test foundation
 
@@ -53,8 +53,33 @@ Issue #2 and PR #10 completed the initial Arta application scaffold. The accepte
 - PWA `/api/*` requests are proxied internally to the Go server
 - contributor/self-hosted technical setup is documented in `docs/development/setup.md`
 - GitHub Actions has three verification lanes: web, server, and self-hosted E2E
-- verified self-hosted E2E covers Compose build/startup, `/api/health`, `/api/ready`, the PWA root, Playwright browser behavior, and clean shutdown
 - Issue #2 is closed and PR #10 is merged
+
+## Household and wallet domain implementation
+
+Issue #3 implementation exists on branch `issue-3-household-wallet` and is pending CI/PR verification before merge.
+
+Implemented domain decisions:
+
+- Household IDs are application-generated UUIDs.
+- Household names are trimmed, required, and limited to 120 characters.
+- Creating a household creates its initial owner membership atomically.
+- Membership links a household to an authentication `subject_id`; advanced roles and permissions remain out of scope.
+- A household can own multiple wallets.
+- Wallet types are `cash`, `bank`, `e_wallet`, and `other`.
+- Wallet currency is a three-letter uppercase code established at creation.
+- Wallet lifecycle is `active` -> `archived`.
+- Archived wallets remain readable but cannot be modified through the wallet update domain operation.
+- Archiving is a lifecycle transition rather than physical deletion.
+- Critical household/wallet invariants are enforced below the UI layer in Go and duplicated as PostgreSQL constraints where practical.
+
+Implemented server flows:
+
+- Create/read household
+- Create/list/read/update/archive wallet within household context
+- PostgreSQL migration for households, memberships, and wallets
+- Domain unit tests
+- Real PostgreSQL integration coverage for household + multi-wallet + update/archive flow
 
 ## Accepted MVP implementation architecture
 
@@ -83,7 +108,7 @@ Issue #2 and PR #10 completed the initial Arta application scaffold. The accepte
 - Argon2id password hashing
 - Server-side sessions with secure HttpOnly cookies
 
-Full login, household invitation, membership, and authorization flows are not implemented yet.
+Full login, household invitation, and authorization flows are not implemented yet. Issue #3 only establishes the membership relationship needed by the financial domain.
 
 ### Offline/sync direction
 - Local-first capture where appropriate using IndexedDB/Dexie
@@ -99,25 +124,6 @@ The scaffold establishes the local persistence boundary only. Transaction synchr
 Docker Compose is the **first technical self-hosted path**, not the final low-friction normal-user installer.
 
 The product requirement remains to evolve toward a launcher/CLI/installer that hides infrastructure complexity from ordinary users. A public deployment, if provided, remains a disposable demo/preview rather than production SaaS.
-
-## Developer/platform constraints
-
-- Primary development environment is Windows.
-- Primary personal mobile testing device is iPhone.
-- The PWA-first path remains testable without requiring a Mac or iOS-native signing workflow.
-
-## Repository foundation completed
-
-- AI agent instructions
-- Product vision and requirements
-- Product glossary and conceptual flows
-- Architecture principles and conceptual data model
-- ADR-001 through ADR-005
-- Roadmap and MVP definition
-- Assumption/open-question register
-- GitHub task backlog
-- MVP implementation stack decision
-- Initial application scaffold and CI/self-hosted verification
 
 ## Still to decide / refine
 
@@ -136,11 +142,11 @@ The product requirement remains to evolve toward a launcher/CLI/installer that h
 
 Issue #3: **Household and wallet domain foundation**.
 
-The project should now move from infrastructure scaffolding into real financial-domain behavior while preserving the invariants and boundaries established in the repository documentation.
+The implementation is ready for automated verification. It must not be considered complete until migrations, domain tests, PostgreSQL integration behavior, existing web/server checks, and self-hosted startup remain green.
 
 ## Next execution steps
 
-1. Implement the household and wallet domain foundation through Issue #3.
+1. Verify Issue #3 through CI and merge its PR only when acceptance criteria are satisfied.
 2. Implement transaction and wallet-transfer semantics through Issue #4.
 3. Implement quick capture and Transaction Inbox through Issue #5.
 4. Keep CI and self-hosted startup green as each domain slice is added.
