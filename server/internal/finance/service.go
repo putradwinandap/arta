@@ -31,15 +31,15 @@ type HouseholdTotals struct {
 }
 
 type Activity struct {
-	ID                  uuid.UUID   `json:"id"`
-	Type                string      `json:"type"`
-	WalletID            *uuid.UUID  `json:"walletId,omitempty"`
-	SourceWalletID      *uuid.UUID  `json:"sourceWalletId,omitempty"`
-	DestinationWalletID *uuid.UUID  `json:"destinationWalletId,omitempty"`
-	AmountMinor         int64       `json:"amountMinor"`
-	Currency            string      `json:"currency"`
-	OccurredAt          time.Time   `json:"occurredAt"`
-	Note                string      `json:"note,omitempty"`
+	ID                  uuid.UUID  `json:"id"`
+	Type                string     `json:"type"`
+	WalletID            *uuid.UUID `json:"walletId,omitempty"`
+	SourceWalletID      *uuid.UUID `json:"sourceWalletId,omitempty"`
+	DestinationWalletID *uuid.UUID `json:"destinationWalletId,omitempty"`
+	AmountMinor         int64      `json:"amountMinor"`
+	Currency            string     `json:"currency"`
+	OccurredAt          time.Time  `json:"occurredAt"`
+	Note                string     `json:"note,omitempty"`
 }
 
 func NewService(pool *pgxpool.Pool) *Service {
@@ -239,7 +239,9 @@ func IsLedgerInputError(err error) bool {
 	return errors.Is(err, ledger.ErrInvalidAmount) || errors.Is(err, ledger.ErrInvalidKind) || errors.Is(err, ledger.ErrInvalidWallet) || errors.Is(err, ledger.ErrInvalidHousehold) || errors.Is(err, ledger.ErrInvalidCurrency) || errors.Is(err, ledger.ErrSelfTransfer) || errors.Is(err, ledger.ErrCurrencyMismatch) || errors.Is(err, ledger.ErrArchivedWallet)
 }
 
-type rowScanner interface { Scan(dest ...any) error }
+type rowScanner interface {
+	Scan(dest ...any) error
+}
 
 func scanWallet(row rowScanner) (wallet.Wallet, error) {
 	var w wallet.Wallet
