@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main, issue-2-scaffold]
+  pull_request:
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run typecheck:web
+      - run: npm run test:web
+      - run: npm run build:web
+
+  server:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: arta
+          POSTGRES_USER: arta
+          POSTGRES_PASSWORD: arta
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U arta -d arta"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: server
+    env:
+      ARTA_DATABASE_URL: postgres://arta:arta@localhost:5432/arta?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - run: go mod tidy
+      - run: go install github.com/pressly/goose/v3/cmd/goose@v3.27.3
+      - run: goose -dir db/migrations postgres "$ARTA_DATABASE_URL" up
+      - run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+      - run: sqlc generate
+      - run: test -z "$(gofmt -l .)"
+      - run: go test ./...
+      - run: go build ./cmd/arta
+
+  self-hosted-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: docker compose up -d --build
+      - name: Wait for Arta
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8080/api/health >/dev/null \
+              && curl --fail --silent http://127.0.0.1:8080/api/ready >/dev/null \
+              && curl --fail --silent http://127.0.0.1:8080/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs
+          exit 1
+      - run: npm run test:e2e
+        env:
+          ARTA_E2E_BASE_URL: http://127.0.0.1:8080
+      - name: Show compose status
+        if: always()
+        run: docker compose ps
+      - name: Stop compose stack
+        if: always()
+        run: docker compose down -v

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Status: **MVP implementation architecture selected.** See `docs/architecture/decisions/ADR-004-mvp-technical-architecture.md`.
+Status: **MVP implementation architecture selected and scaffolded.** See `docs/architecture/decisions/ADR-004-mvp-technical-architecture.md` and `ADR-005-database-migrations-with-goose.md`.
 
 ## Architecture goals
 
@@ -40,7 +40,7 @@ Arta should optimize for:
 - PostgreSQL
 - `pgx`
 - `sqlc`
-- SQL migrations using a lightweight migration tool selected during scaffold implementation
+- Goose SQL migrations
 
 ### Authentication
 - Built-in self-hosted auth
@@ -52,39 +52,66 @@ Arta should optimize for:
 - React Testing Library
 - Playwright
 - Go `testing`
-- Real PostgreSQL integration testing where practical
+- Real PostgreSQL integration behavior where practical
 - GitHub Actions
 - GitHub Releases
 
-## Deployment direction
+## Current scaffold topology
 
-Arta is an **open-source, self-hosted-first** application. The normal production path is a household-controlled Arta deployment rather than a mandatory Arta-operated SaaS service.
-
-The MVP client is **PWA-first** and the primary server database is **PostgreSQL**.
-
-Conceptually:
+The first technical self-hosted path uses Docker Compose:
 
 ```text
-                     Household-controlled deployment
-
-                 +----------------------------------+
-                 |            Arta Server           |
-                 |                                  |
-                 | Go + chi REST API                |
-                 | modular monolith                 |
-                 |                |                 |
-                 |                v                 |
-                 |   pgx/sqlc -> PostgreSQL         |
-                 +----------------+-----------------+
-                                  ^
-                                  | sync / API
-                  +---------------+---------------+
-                  |                               |
-             PWA on phone                    PWA on desktop
-     React/Vite + Dexie/IndexedDB     React/Vite + Dexie/IndexedDB
+Browser / installed PWA
+        |
+        | http://host:8080
+        v
++---------------------------+
+| Nginx / built React PWA   |
+|                           |
+| /        -> static PWA    |
+| /api/*   -> Go server     |
++-------------+-------------+
+              |
+              v
++---------------------------+
+| Go + chi Arta server      |
+| modular monolith          |
+| health + readiness        |
++-------------+-------------+
+              |
+              | pgx / sqlc
+              v
++---------------------------+
+| PostgreSQL                |
+| Goose-managed schema      |
+| persistent Docker volume  |
++---------------------------+
 ```
 
-The Go server may embed the built PWA assets so the core application can later be distributed as a cohesive server product.
+Before the server starts, a one-shot Compose migration service waits for PostgreSQL health and applies Goose migrations.
+
+This Nginx container is a practical scaffold/distribution boundary, not a permanent architectural requirement. ADR-004 still permits the Go server to embed built PWA assets later to reduce packaging components.
+
+## Repository boundaries
+
+```text
+arta/
+├── apps/
+│   └── web/                 # React/Vite PWA + Dexie
+├── server/
+│   ├── cmd/arta/            # Go executable entrypoint
+│   ├── internal/            # server/application infrastructure
+│   ├── db/
+│   │   ├── migrations/      # Goose SQL migrations
+│   │   └── queries/         # sqlc query definitions
+│   └── sqlc.yaml
+├── e2e/                     # Playwright
+├── docs/
+├── compose.yaml
+└── .github/workflows/
+```
+
+Avoid premature package fragmentation. Add domain packages when real domain behavior exists rather than creating empty abstractions during scaffolding.
 
 ## Offline capture and synchronization
 
@@ -100,7 +127,7 @@ Initial synchronization principles:
 - Do not use blind last-write-wins for sensitive financial conflicts.
 - Keep the MVP sync engine deliberately small rather than introducing CRDTs or a general-purpose distributed database.
 
-Detailed sync endpoint and conflict rules will be refined during implementation and may receive a dedicated ADR.
+The current scaffold creates the IndexedDB/Dexie boundary but intentionally does **not** implement the transaction synchronization engine yet.
 
 ## Distribution topology
 
@@ -111,15 +138,13 @@ Arta distinguishes four experiences:
 3. **Public demo** — disposable preview only; not a production hosted finance service.
 4. **Contributor environment** — source checkout and development dependencies; this must not be confused with normal installation.
 
-PostgreSQL is part of the accepted server architecture, but users should not be required to manually administer it for the default installation path when automation can reasonably handle initialization and migrations.
-
-The product roadmap should move from Docker Compose toward a lower-friction launcher/CLI/installer for normal users.
+The current Compose path packages the PWA, Go server, migration runner, and PostgreSQL. It proves the deployment topology but is not the final normal-user installer experience.
 
 ## Application shape
 
 Use a modular monolith for the MVP unless a concrete requirement justifies additional services.
 
-Logical modules:
+Logical modules will grow around real behavior:
 
 - Identity / authentication
 - Household and membership
@@ -168,14 +193,22 @@ Wallet transfers use explicit transfer semantics and must not be interpreted as 
 - Synchronization conflicts must be handled deliberately rather than with blind last-write-wins behavior for sensitive financial state.
 - Database behavior should remain explicit; `sqlc` is preferred over hiding core financial semantics behind a large ORM abstraction.
 
+## Health and readiness
+
+The server exposes:
+
+- `/api/health` — process liveness
+- `/api/ready` — readiness including PostgreSQL connectivity
+
+These endpoints are infrastructure signals and should remain free of product/business semantics.
+
 ## Future native integration
 
 PWA-first does not mean browser-only forever. A future Android client or companion may provide OS-specific capabilities such as notification-based transaction capture and communicate with the same Arta domain/server model. Native functionality should be added when an OS capability justifies it rather than making native mobile installation a prerequisite for the core product.
 
-## Decision record
+## Decision records
 
-The implementation choice and alternatives are recorded in:
+- `ADR-004-mvp-technical-architecture.md`
+- `ADR-005-database-migrations-with-goose.md`
 
-- `docs/architecture/decisions/ADR-004-mvp-technical-architecture.md`
-
-The next engineering step is Issue #2: scaffold the selected architecture and establish the first reproducible self-hosted runtime.
+Current implementation work is tracked by Issue #2 and PR #10.

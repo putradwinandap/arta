@@ -4,9 +4,9 @@ Last updated: 2026-09-09
 
 ## Current phase
 
-**Engineering foundation / scaffold preparation**
+**Engineering foundation / scaffold implementation**
 
-The MVP implementation architecture has been selected and recorded in `ADR-004-mvp-technical-architecture.md`. The next execution step is to scaffold the application foundation.
+The MVP architecture from ADR-004 has now been scaffolded on branch `issue-2-scaffold` through Issue #2 and draft PR #10. Verification is performed through GitHub Actions before the issue is considered complete.
 
 ## Established
 
@@ -22,7 +22,40 @@ The MVP implementation architecture has been selected and recorded in `ADR-004-m
 - Technical complexity should be absorbed by the product rather than imposed on users where practical.
 - Transaction Inbox is a central product concept.
 - Wallet transfers are explicit transfers, not income + expense.
-- Initial MVP areas: household, wallets, transactions, quick capture, Transaction Inbox, budgets, goals, transfers, and basic reporting.
+
+## Implemented scaffold
+
+### Client / PWA
+- React + TypeScript + Vite application under `apps/web`
+- `vite-plugin-pwa` manifest/service-worker build foundation
+- Dexie/IndexedDB local database foundation
+- Zod dependency ready for runtime validation
+- Vitest + React Testing Library test foundation
+- Production PWA container served through Nginx
+
+### Server
+- Go 1.27 modular-monolith foundation under `server`
+- `net/http` + `chi` routing
+- `/api/health` liveness endpoint
+- `/api/ready` PostgreSQL readiness endpoint
+- graceful HTTP shutdown
+- `pgx` PostgreSQL connection pool
+- Argon2id password hashing foundation
+
+### Database
+- PostgreSQL 17 technical deployment
+- SQL-first migration files
+- Goose selected as migration tool in ADR-005
+- `sqlc` configuration and a trivial typed query definition
+- persistent PostgreSQL Docker volume
+
+### Delivery / verification
+- Docker Compose starts PostgreSQL, applies migrations, starts the Go server, builds/serves the PWA, and exposes Arta on port 8080
+- PWA `/api/*` requests are proxied internally to the Go server
+- GitHub Actions verifies web typecheck/tests/build and backend database/toolchain/tests/build
+- Playwright E2E test foundation exists
+- contributor setup documented in `docs/development/setup.md`
+- draft PR #10 tracks the scaffold change and closes Issue #2 when merged
 
 ## Accepted MVP implementation architecture
 
@@ -46,12 +79,14 @@ The MVP implementation architecture has been selected and recorded in `ADR-004-m
 - PostgreSQL
 - `pgx`
 - `sqlc`
-- SQL migrations using a lightweight migration tool selected during scaffold implementation
+- Goose migrations
 
 ### Authentication
 - Built-in self-hosted authentication
 - Argon2id password hashing
 - Server-side sessions with secure HttpOnly cookies
+
+The scaffold currently implements the password-hashing foundation. Full login/session/household authentication flows remain future product work.
 
 ### Offline/sync direction
 - Local-first capture where appropriate using IndexedDB/Dexie
@@ -60,33 +95,13 @@ The MVP implementation architecture has been selected and recorded in `ADR-004-m
 - No blind last-write-wins for sensitive financial state
 - No CRDT/general distributed-database complexity for the MVP
 
-### Packaging/testing/delivery
-- Docker Compose is the first supported technical self-hosted deployment path
-- Product roadmap moves toward lower-friction CLI/launcher/installer distribution
-- Vitest + React Testing Library for frontend tests
-- Playwright for end-to-end browser testing
-- Go `testing` for backend tests
-- Real PostgreSQL integration behavior tested where practical
-- GitHub Actions for CI
-- GitHub Releases for distribution artifacts
-
-## Accepted delivery direction
-
-- **PWA-first** is the accepted MVP client strategy.
-- **PostgreSQL** is the accepted primary server database.
-- The primary product is a downloadable/self-hosted deployment controlled by the user/household.
-- The MVP must provide an installation/startup path in addition to contributor source-code setup.
-- End users should not need to manually install the application's development dependencies just to use Arta.
-- Docker Compose is the first supported technical deployment path, but it is not considered the final normal-user installation experience.
-- The PWA should tolerate temporary loss of connectivity for capture where feasible.
-- A public online deployment may exist as a **demo/preview only**, with disposable/demo data and without being positioned as Arta's production SaaS offering.
-- Future Android-native capability may complement the PWA for OS-specific automatic capture such as notification access; it is not required for the core MVP client.
+The scaffold establishes local persistence only. The generalized transaction sync engine is intentionally not part of Issue #2.
 
 ## Developer/platform constraints
 
 - Primary development environment is Windows.
 - Primary personal mobile testing device is iPhone.
-- The MVP should therefore be testable and useful without requiring a Mac or an iOS-native development/signing workflow.
+- The PWA-first path remains testable without a Mac or iOS-native signing workflow.
 
 ## Repository foundation completed
 
@@ -94,18 +109,17 @@ The MVP implementation architecture has been selected and recorded in `ADR-004-m
 - Product vision and requirements
 - Product glossary and conceptual flows
 - Architecture principles and conceptual data model
-- ADR-001 through ADR-004
+- ADR-001 through ADR-005
 - Roadmap and MVP definition
 - Assumption/open-question register
 - GitHub task backlog
 - MVP implementation stack decision
+- Initial application scaffold on `issue-2-scaffold`
 
 ## Still to decide / refine
 
-These are implementation-detail or domain decisions, not blockers to starting the scaffold:
-
-- Exact SQL migration tool (for example Goose or Tern)
 - Detailed permissions model
+- Complete login/session/household invitation behavior
 - Detailed sync endpoint contract and conflict rules
 - Packaging evolution from Docker Compose toward CLI/launcher/installer
 - Public demo hosting/deployment provider
@@ -119,25 +133,12 @@ These are implementation-detail or domain decisions, not blockers to starting th
 
 Issue #2: **Scaffold Arta application foundation**.
 
-The scaffold should establish:
-
-- React + TypeScript + Vite PWA
-- Dexie/IndexedDB foundation
-- Go + chi server
-- PostgreSQL
-- `pgx` + `sqlc`
-- migrations
-- auth/session foundation
-- Docker Compose
-- test foundations
-- GitHub Actions CI
-- documented contributor and self-hosted startup paths
+The code scaffold exists. Remaining completion work is verification against its acceptance criteria and merging PR #10.
 
 ## Next execution steps
 
-1. Scaffold the selected architecture through Issue #2.
-2. Validate reproducible PostgreSQL startup and migrations.
-3. Validate PWA access from supported desktop/mobile browsers.
-4. Establish CI and test foundations.
-5. Implement the domain foundation starting with household/wallet/transaction semantics.
-6. Build the minimal quick-capture -> Transaction Inbox -> confirm flow before advanced automation.
+1. Finish CI verification for the scaffold.
+2. Validate Docker Compose startup and PWA/API routing through the reproducible workflow.
+3. Merge PR #10 and close Issue #2 when acceptance criteria are satisfied.
+4. Begin the domain foundation with household, wallet, and transaction semantics.
+5. Build the minimal quick-capture -> Transaction Inbox -> confirm flow before advanced automation.

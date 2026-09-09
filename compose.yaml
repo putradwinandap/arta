@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: arta
+      POSTGRES_USER: arta
+      POSTGRES_PASSWORD: arta
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arta -d arta"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - arta-postgres:/var/lib/postgresql/data
+
+  migrate:
+    image: golang:1.27.1-alpine
+    working_dir: /workspace/server
+    volumes:
+      - .:/workspace
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: postgres://arta:arta@postgres:5432/arta?sslmode=disable
+      GOOSE_MIGRATION_DIR: db/migrations
+    command: ["sh", "-c", "go install github.com/pressly/goose/v3/cmd/goose@v3.27.3 && /go/bin/goose up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  server:
+    build:
+      context: ./server
+    environment:
+      ARTA_HTTP_ADDR: :8080
+      ARTA_DATABASE_URL: postgres://arta:arta@postgres:5432/arta?sslmode=disable
+      ARTA_SESSION_SECRET: local-development-only-change-me
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./apps/web
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+
+volumes:
+  arta-postgres:
