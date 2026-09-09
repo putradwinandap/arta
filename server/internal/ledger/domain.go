@@ -16,14 +16,14 @@ const (
 )
 
 var (
-	ErrInvalidAmount       = errors.New("invalid_amount")
-	ErrInvalidKind         = errors.New("invalid_transaction_kind")
-	ErrInvalidWallet       = errors.New("invalid_wallet")
-	ErrInvalidHousehold    = errors.New("invalid_household")
-	ErrInvalidCurrency     = errors.New("invalid_currency")
-	ErrSelfTransfer        = errors.New("self_transfer")
-	ErrCurrencyMismatch    = errors.New("currency_mismatch")
-	ErrArchivedWallet      = errors.New("wallet_archived")
+	ErrInvalidAmount    = errors.New("invalid_amount")
+	ErrInvalidKind      = errors.New("invalid_transaction_kind")
+	ErrInvalidWallet    = errors.New("invalid_wallet")
+	ErrInvalidHousehold = errors.New("invalid_household")
+	ErrInvalidCurrency  = errors.New("invalid_currency")
+	ErrSelfTransfer     = errors.New("self_transfer")
+	ErrCurrencyMismatch = errors.New("currency_mismatch")
+	ErrArchivedWallet   = errors.New("wallet_archived")
 )
 
 type Transaction struct {
@@ -69,8 +69,14 @@ func NewTransaction(householdID, walletID uuid.UUID, kind Kind, amountMinor int6
 		occurredAt = time.Now()
 	}
 	return Transaction{
-		ID: uuid.New(), HouseholdID: householdID, WalletID: walletID, Kind: kind,
-		AmountMinor: amountMinor, Currency: currency, OccurredAt: occurredAt.UTC(), Note: strings.TrimSpace(note),
+		ID:          uuid.New(),
+		HouseholdID: householdID,
+		WalletID:    walletID,
+		Kind:        kind,
+		AmountMinor: amountMinor,
+		Currency:    currency,
+		OccurredAt:  occurredAt.UTC(),
+		Note:        strings.TrimSpace(note),
 	}, nil
 }
 
@@ -95,8 +101,14 @@ func NewTransfer(householdID, sourceWalletID, destinationWalletID uuid.UUID, amo
 		occurredAt = time.Now()
 	}
 	return Transfer{
-		ID: uuid.New(), HouseholdID: householdID, SourceWalletID: sourceWalletID, DestinationWalletID: destinationWalletID,
-		AmountMinor: amountMinor, Currency: currency, OccurredAt: occurredAt.UTC(), Note: strings.TrimSpace(note),
+		ID:                  uuid.New(),
+		HouseholdID:         householdID,
+		SourceWalletID:      sourceWalletID,
+		DestinationWalletID: destinationWalletID,
+		AmountMinor:         amountMinor,
+		Currency:            currency,
+		OccurredAt:          occurredAt.UTC(),
+		Note:                strings.TrimSpace(note),
 	}, nil
 }
 
