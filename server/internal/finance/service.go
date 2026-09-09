@@ -63,6 +63,9 @@ func (s *Service) GetHousehold(ctx context.Context, id uuid.UUID) (household.Hou
 }
 
 func (s *Service) CreateWallet(ctx context.Context, householdID uuid.UUID, name string, walletType wallet.Type, currency string) (wallet.Wallet, error) {
+	if _, err := s.GetHousehold(ctx, householdID); err != nil {
+		return wallet.Wallet{}, err
+	}
 	w, err := wallet.New(householdID, name, walletType, currency)
 	if err != nil {
 		return wallet.Wallet{}, err
