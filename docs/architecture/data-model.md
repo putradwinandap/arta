@@ -1,6 +1,6 @@
 # Data Model
 
-Status: Household and wallet are implemented. Other financial models remain conceptual until their implementation issues are completed.
+Status: Household, wallet, transaction, and wallet transfer are implemented. Later planning/capture models remain conceptual until their implementation issues are completed.
 
 ## Household
 
@@ -13,18 +13,15 @@ Implemented attributes:
 - `created_at`
 - `updated_at`
 
-Conceptual relationships:
-
 ```text
 Household
   |-- Members
   |-- Wallets
   |-- Transactions
+  |-- Transfers
   |-- Budgets
   `-- Goals
 ```
-
-A household can own multiple wallets.
 
 ## Member
 
@@ -37,11 +34,7 @@ Implemented attributes:
 - `subject_id` — required UUID representing the authentication identity/subject
 - `created_at`
 
-A `(household_id, subject_id)` pair is unique so the same subject cannot be added to the same household twice.
-
-Issue #3 intentionally does not define advanced roles or permissions. `subject_id` is the durable boundary to the future built-in authentication model; the full user/login/invitation lifecycle remains separate work.
-
-Creating a household through the application service also creates its initial owner membership atomically.
+A `(household_id, subject_id)` pair is unique. Advanced roles and permissions remain out of scope. Creating a household through the application service creates its initial owner membership atomically.
 
 ## Wallet
 
@@ -61,55 +54,77 @@ Implemented attributes:
 
 Implemented invariants:
 
-- Wallet domain validation is enforced below the UI/API layer in Go.
-- Equivalent critical constraints are also enforced by PostgreSQL where practical.
+- Wallet domain validation is enforced below the UI/API layer in Go and duplicated as PostgreSQL constraints where practical.
 - A wallet always belongs to exactly one household.
-- Wallet currency is established when the wallet is created and is not changed by the Issue #3 update flow.
-- An archived wallet remains queryable but cannot be modified through the domain update operation.
+- Wallet currency is established at creation and is immutable in the current flows.
+- An archived wallet remains queryable but cannot be modified or receive new financial activity.
 - Archiving is a lifecycle transition, not physical deletion.
 
-Balance storage/derivation remains intentionally undecided and will be resolved with transaction/reconciliation work.
+### Wallet balance
+
+Issue #4 deliberately does **not** add a mutable balance column. Current wallet balance is derived from the immutable financial records that affect that wallet:
+
+```text
+income
+- expense
+- outgoing transfers
++ incoming transfers
+= wallet balance
+```
+
+This avoids dual sources of truth while the financial core is still being established. Reconciliation/opening-balance behavior remains future work.
 
 ## Transaction
 
-Represents a financial event/captured record.
+A transaction is a confirmed household income or expense. It is intentionally separate from the later quick-capture/Transaction Inbox model.
 
-Candidate attributes:
+Implemented attributes in `transactions`:
 
-- id
-- household_id
-- wallet_id where applicable
-- type (expense, income, transfer semantics handled explicitly)
-- amount
-- currency
-- occurred_at
-- category_id (optional)
-- description (optional)
-- merchant/source information (optional)
-- capture_source
-- review_status
-- created_by
-- created_at
-- updated_at
+- `id` — application-generated UUID
+- `household_id`
+- `wallet_id`
+- `kind` — exactly `income` or `expense`
+- `amount_minor` — positive `BIGINT`
+- `currency` — three uppercase letters, inherited from the wallet
+- `occurred_at` — timezone-aware timestamp
+- `note` — optional user metadata stored as empty text when absent
+- `created_at`
 
-The final model must preserve the difference between capture state and financial semantics.
+Implemented invariants:
+
+- Monetary values use integer minor units (`int64` in Go, `BIGINT` in PostgreSQL); floating-point arithmetic is not used by the financial domain or persistence layer.
+- Amount must be strictly positive.
+- The wallet must belong to the transaction household.
+- New activity cannot target an archived wallet.
+- Currency is taken from the wallet rather than trusted from client input.
+- Income contributes positively to wallet balance and household income total.
+- Expense contributes negatively to wallet balance and contributes to household expense total.
+
+Issue #4 does not add edit/delete semantics for historical transactions; auditability remains preferred over silent mutation.
 
 ## Transfer
 
-A transfer is one logical money movement connecting a source wallet and destination wallet.
+A transfer is one logical money movement connecting a source wallet and destination wallet. It is stored in the dedicated `transfers` table rather than being encoded as an income plus an expense.
 
-Candidate attributes:
+Implemented attributes:
 
-- id
-- household_id
-- source_wallet_id
-- destination_wallet_id
-- amount
-- currency
-- occurred_at
-- created_by
+- `id` — application-generated UUID
+- `household_id`
+- `source_wallet_id`
+- `destination_wallet_id`
+- `amount_minor` — positive `BIGINT`
+- `currency`
+- `occurred_at`
+- `note`
+- `created_at`
 
-Implementation may use linked ledger entries internally, but the domain must preserve one logical transfer and exclude it from household income/expense totals.
+Implemented invariants:
+
+- Source and destination must be distinct active wallets in the same household.
+- Source and destination must use the same currency; foreign-exchange transfers are out of scope.
+- Amount must be strictly positive.
+- One persisted transfer row changes the derived source and destination balances consistently.
+- Transfers are excluded from household income and expense totals by construction.
 
 ## Budget
 
@@ -137,4 +152,4 @@ The funding/progress model remains open.
 
 ## Captured transaction / Inbox state
 
-The system must support transaction information that exists before full classification or confirmation. Whether this is modeled as a transaction status, separate capture entity, or another structure is intentionally undecided pending implementation design.
+The system must support transaction information that exists before full classification or confirmation. This is not the same entity as the confirmed `transactions` introduced by Issue #4. The exact capture/Inbox persistence model remains intentionally deferred to Issue #5.
