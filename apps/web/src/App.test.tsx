@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 
 const household = { id: '11111111-1111-4111-8111-111111111111', name: 'Keluarga Arta' };
@@ -9,6 +9,11 @@ beforeEach(() => {
   localStorage.clear();
   vi.restoreAllMocks();
   vi.stubGlobal('crypto', { randomUUID: () => '22222222-2222-4222-8222-222222222222' });
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe('App household and wallet slice', () => {
