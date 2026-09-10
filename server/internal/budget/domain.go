@@ -59,7 +59,13 @@ func dateUTC(value time.Time) time.Time {
 }
 
 func validCurrency(currency string) bool {
-	if len(currency) != 3 { return false }
-	for _, r := range currency { if r < 'A' || r > 'Z' { return false } }
+	if len(currency) != 3 {
+		return false
+	}
+	for _, r := range currency {
+		if r < 'A' || r > 'Z' {
+			return false
+		}
+	}
 	return true
 }
