@@ -3,13 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { BudgetMount } from './BudgetMount';
+import { GoalMount } from './GoalMount';
 import './styles.css';
-
 registerSW({ immediate: true });
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-    <BudgetMount />
-  </React.StrictMode>
-);
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/><BudgetMount/><GoalMount/></React.StrictMode>);

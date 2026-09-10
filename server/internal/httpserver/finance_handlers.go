@@ -225,7 +225,7 @@ func (h financeHandlers) getFinanceOverview(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
-	balances, err := h.service.WalletBalances(r.Context(), householdID)
+	balances, err := h.service.WalletAvailableBalances(r.Context(), householdID)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
@@ -272,7 +272,8 @@ func handleFinanceError(w http.ResponseWriter, err error) {
 		errors.Is(err, wallet.ErrWalletArchived) ||
 		finance.IsLedgerInputError(err) ||
 		finance.IsCaptureInputError(err) ||
-		finance.IsBudgetInputError(err) {
+		finance.IsBudgetInputError(err) ||
+		finance.IsGoalInputError(err) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
