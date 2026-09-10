@@ -30,6 +30,15 @@ function formatMoney(amountMinor: number, currency = 'IDR') {
   }).format(amountMinor);
 }
 
+function captureApiPayload(item: LocalCapture) {
+  return {
+    id: item.id,
+    amountMinor: item.amountMinor,
+    note: item.note,
+    capturedAt: item.capturedAt,
+  };
+}
+
 export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) {
   const [captures, setCaptures] = useState<TransactionCapture[]>([]);
   const [amount, setAmount] = useState('');
@@ -60,12 +69,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
     let syncedAny = false;
     for (const item of localCaptures) {
       try {
-        await createCapture(householdId, {
-          id: item.id,
-          amountMinor: item.amountMinor,
-          note: item.note,
-          capturedAt: item.capturedAt,
-        });
+        await createCapture(householdId, captureApiPayload(item));
         await localDb.captures.delete(item.id);
         syncedAny = true;
       } catch {
@@ -110,7 +114,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
     try {
       await localDb.captures.put(localCapture);
       try {
-        await createCapture(householdId, localCapture);
+        await createCapture(householdId, captureApiPayload(localCapture));
         await localDb.captures.delete(localCapture.id);
         await refreshInbox();
         setMessage('Captured. You can classify it later.');
