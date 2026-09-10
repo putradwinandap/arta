@@ -42,7 +42,7 @@ Arta's engineering scaffold, household/wallet workflows, confirmed transaction/t
 
 ### Database
 - PostgreSQL 17
-- Goose SQL migrations through version 5
+- Goose SQL migrations through version 6
 - `sqlc` generation foundation
 - persistent Docker volume
 - real PostgreSQL integration tests
@@ -122,6 +122,20 @@ Required invariants for the design:
 
 The precise persistence and wallet interaction model will be finalized in ADR-007 as part of Issue #7 before implementation expands.
 
+## Implemented reserved-fund financial goals
+
+Issue #7 adds goals whose progress is backed by real wallet funds.
+
+- Goals have household, currency, target amount, active/archived lifecycle, and derived reserved progress.
+- `goal_reservation_events` records explicit reserve/release operations tied to a real source wallet.
+- Reserving money does not change physical wallet balance and is neither income, expense, transfer, nor budget spending.
+- Finance overview distinguishes physical, reserved, and available wallet money; `available = physical balance - reserved`.
+- Reservations cannot exceed available wallet money, preventing the same funds from backing multiple goals.
+- Releases cannot exceed the amount reserved by that goal from that wallet.
+- Goal remaining target is floored at zero while reservation history remains auditable.
+- REST endpoints and PWA workspace support create, edit, archive, reserve, release, and progress display.
+- ADR-007 and `docs/product/financial-goals.md` define the durable semantics.
+
 ## Accepted MVP implementation architecture
 
 - Client: React, TypeScript, Vite, PWA, IndexedDB/Dexie where appropriate.
@@ -149,15 +163,12 @@ Docker Compose remains the first technical self-hosted path, not the final norma
 
 ## Current execution target
 
-**Issue #7 — Design and implement financial goals.**
-
-The accepted product direction is reserved-fund goals: progress represents money actually allocated to the goal, not manually reported progress.
+Issue #7 reserved-fund financial goals are implemented in PR #19 and are pending final CI/merge.
 
 ## Next execution steps
 
-1. Finalize ADR-007 for reserved-fund goal semantics and its interaction with wallets/transfers.
-2. Deliver Issue #7 as the smallest coherent vertical slice across domain, persistence, API, frontend UX, and verification.
-3. Ensure reserved funds remain household assets while being excluded from ordinary available-to-spend money.
-4. Preserve the established trust boundary and exact integer monetary representation.
-5. Keep web, server, and self-hosted E2E CI lanes green.
-6. Update product/data-model/current-state documentation as the goal slice becomes concrete.
+1. Merge PR #19 only after web, server, and self-hosted E2E CI lanes are green.
+2. Select the next coherent roadmap Issue after the planning-core goal slice is merged.
+3. Preserve exact integer monetary representation and the distinction between physical, reserved, and available funds.
+4. Keep goal reservations separate from income/expense, budget spending, and physical wallet transfers.
+5. Resolve future reconciliation and automatic-capture work through explicit domain decisions rather than weakening the trusted ledger.
