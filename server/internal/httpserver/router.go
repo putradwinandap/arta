@@ -32,6 +32,11 @@ func New(pool *pgxpool.Pool) http.Handler {
 		r.Get("/{householdID}/finance", financeHandler.getFinanceOverview)
 		r.Post("/{householdID}/transactions", financeHandler.createTransaction)
 		r.Post("/{householdID}/transfers", financeHandler.createTransfer)
+		r.Route("/{householdID}/budgets", func(r chi.Router) {
+			r.Post("/", financeHandler.createBudget)
+			r.Get("/", financeHandler.listBudgets)
+			r.Get("/{budgetID}", financeHandler.getBudget)
+		})
 		r.Route("/{householdID}/captures", func(r chi.Router) {
 			r.Post("/", financeHandler.createCapture)
 			r.Get("/", financeHandler.listPendingCaptures)

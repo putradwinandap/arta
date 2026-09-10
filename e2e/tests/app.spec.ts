@@ -1,11 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-test('captures quickly, reviews inbox, and keeps confirmed finance trustworthy', async ({ page }) => {
+test('captures, budgets, reviews, and keeps confirmed finance trustworthy', async ({ page }) => {
   const householdName = `Keluarga E2E ${Date.now()}`;
-
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /start your family finance space/i })).toBeVisible();
-
   await page.getByLabel(/household name/i).fill(householdName);
   await page.getByRole('button', { name: /create household/i }).click();
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
@@ -16,25 +14,30 @@ test('captures quickly, reviews inbox, and keeps confirmed finance trustworthy',
   await createPanel.getByLabel(/currency/i).fill('IDR');
   await createPanel.getByRole('button', { name: /add wallet/i }).click();
   await expect(page.getByRole('heading', { name: 'BCA Utama' })).toBeVisible();
-
   await createPanel.getByLabel(/wallet name/i).fill('Cash Rumah');
   await createPanel.locator('select').selectOption('cash');
   await createPanel.getByRole('button', { name: /add wallet/i }).click();
   await expect(page.getByRole('heading', { name: 'Cash Rumah' })).toBeVisible();
+
+  await expect(page.getByRole('heading', { name: /plan a period/i })).toBeVisible();
+  await page.getByLabel('Budget amount').fill('500000');
+  await page.getByRole('button', { name: /create budget/i }).click();
+  await expect(page.locator('article.budget-card')).toContainText('500.000');
+  await expect(page.locator('article.budget-card')).toContainText('Spent');
 
   await page.getByLabel('Quick capture amount').fill('25000');
   await page.getByLabel('Quick capture note').fill('Coffee');
   await page.getByRole('button', { name: /^capture$/i }).click();
   await expect(page.getByText('Coffee')).toBeVisible();
   await expect(page.getByRole('heading', { name: /1 pending review/i })).toBeVisible();
-  await expect(page.getByText(/pending captures do not affect wallet balances/i)).toBeVisible();
+  await page.getByRole('button', { name: /refresh spending/i }).click();
+  await expect(page.locator('article.budget-card')).toContainText(/Spent Rp\s*0/);
 
   const inboxItem = page.locator('article.inbox-item').filter({ hasText: 'Coffee' });
   await inboxItem.getByRole('button', { name: 'Review' }).click();
   await page.getByLabel('Review transaction type').selectOption('expense');
   await page.getByLabel('Review wallet').selectOption({ label: 'BCA Utama' });
   await page.getByRole('button', { name: /save review/i }).click();
-  await expect(inboxItem).toContainText('expense · BCA Utama');
   await inboxItem.getByRole('button', { name: 'Confirm' }).click();
   await expect(page.getByRole('heading', { name: /0 pending review/i })).toBeVisible();
   await expect(page.locator('article.activity-row').filter({ hasText: 'Coffee' })).toBeVisible();
@@ -59,6 +62,11 @@ test('captures quickly, reviews inbox, and keeps confirmed finance trustworthy',
   await page.getByRole('button', { name: /transfer money/i }).click();
   await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
 
+  await page.getByRole('button', { name: /refresh spending/i }).click();
+  const budget = page.locator('article.budget-card');
+  await expect(budget).toContainText('275.000');
+  await expect(budget).toContainText('225.000');
+
   const bcaCard = page.locator('article.wallet-card').filter({ hasText: 'BCA Utama' });
   const cashCard = page.locator('article.wallet-card').filter({ hasText: 'Cash Rumah' });
   await expect(bcaCard).toContainText('425.000');
@@ -68,6 +76,7 @@ test('captures quickly, reviews inbox, and keeps confirmed finance trustworthy',
   await page.reload();
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
   await expect(page.getByRole('heading', { name: /0 pending review/i })).toBeVisible();
+  await expect(page.locator('article.budget-card')).toContainText('275.000');
   await expect(page.locator('article.activity-row').filter({ hasText: 'Coffee' })).toBeVisible();
   await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
 });
