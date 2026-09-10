@@ -64,7 +64,17 @@ jobs:
       - run: npm install
       - name: Install Playwright Chromium
         run: npx playwright install chromium
-      - run: docker compose up -d --build
+      - name: Run supported setup launcher
+        run: |
+          sh scripts/arta.sh setup
+          test -f .env
+          grep -q '^ARTA_POSTGRES_PASSWORD=' .env
+          grep -q '^ARTA_SESSION_SECRET=' .env
+          first_checksum="$(sha256sum .env)"
+          sh scripts/arta.sh setup
+          test "$first_checksum" = "$(sha256sum .env)"
+      - name: Start Arta through supported launcher
+        run: sh scripts/arta.sh start
       - name: Wait for Arta
         run: |
           for attempt in {1..60}; do
