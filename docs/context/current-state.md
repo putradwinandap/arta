@@ -6,7 +6,7 @@ Last updated: 2026-09-10
 
 **Planning-core implementation with vertical-slice delivery**
 
-Arta's engineering scaffold, household/wallet workflows, confirmed transaction/transfer core, capture-first workflow, and MVP budgeting are complete through Issue #6 / PR #18. A household can capture incomplete spending safely, confirm it into the trusted ledger, and track a household-wide per-currency spending budget for an explicit period.
+Arta's engineering scaffold, household/wallet workflows, confirmed transaction/transfer core, capture-first workflow, and MVP budgeting are complete through Issue #6 / merged PR #18. The current execution target is Issue #7: financial goals.
 
 ## Established
 
@@ -16,9 +16,10 @@ Arta's engineering scaffold, household/wallet workflows, confirmed transaction/t
 - Repository is the durable AI-native source of truth.
 - Product principle: **Low friction from installation to daily capture.**
 - Core transaction principle: **Capture now, classify later.**
-- Transaction Inbox is implemented as the trust boundary between incomplete capture and confirmed finance.
+- Transaction Inbox is the trust boundary between incomplete capture and confirmed finance.
 - Wallet transfers are explicit transfers, not income + expense.
 - MVP budgets are household-wide, per-currency spending limits over explicit inclusive date periods.
+- Financial goals represent **actually reserved funds**, not manually claimed progress. Goal progress must be backed by real money allocated to the goal and must not double-count household funds.
 - User-facing development follows the vertical-slice delivery rule in `AGENTS.md`.
 
 ## Implemented engineering foundation
@@ -55,7 +56,7 @@ Arta's engineering scaffold, household/wallet workflows, confirmed transaction/t
 - Issue #4 / PR #16 completed confirmed transactions and wallet transfers.
 - Issue #5 / PR #17 completed Quick Capture and Transaction Inbox.
 - Issue #6 / PR #18 completed MVP household spending budgets.
-- Issue #6 was verified by GitHub Actions run `34471190789`; web, server, and self-hosted E2E all passed before final source-of-truth updates.
+- PR #18 was squash-merged into `main` as `a8a2169dfc561c47d73b742f9087f67c6628a189` after GitHub Actions run `34475333435` (#74) passed web, server, and self-hosted E2E.
 
 ## Implemented household and wallet behavior
 
@@ -80,30 +81,11 @@ Arta's engineering scaffold, household/wallet workflows, confirmed transaction/t
 
 ## Implemented Quick Capture and Transaction Inbox
 
-Issue #5 makes Arta's defining product principle operational.
-
-### Capture boundary
-
-- Quick Capture requires only a positive `amount`; note is optional.
-- Wallet, income/expense kind, category, and other enrichment are intentionally not required during capture.
-- The PWA generates a stable UUID and writes the capture to IndexedDB before attempting the server request.
-- The narrow local outbox preserves captures during temporary server/network unavailability and retries with the same UUID when connectivity returns.
-- Capture creation is idempotent by UUID and a retry cannot overwrite the original captured facts.
-- This IndexedDB behavior is intentionally limited to transaction capture; generalized offline synchronization remains future work.
-
-### Transaction Inbox
-
-- PostgreSQL `transaction_captures` stores pending capture state, provenance, classification fields, and its eventual confirmed transaction link.
-- Pending captures may intentionally lack wallet and transaction kind.
-- Inbox review can add an active household wallet, choose income/expense, and adjust amount/note.
-- Pending captures remain excluded from wallet balances, household income/expense totals, and budget spending calculations.
-
-### Confirmation
-
-- Confirmation requires a reviewed pending capture with wallet, kind, and positive amount.
-- The server creates the confirmed transaction and marks the capture confirmed/linkage in one PostgreSQL transaction.
-- Repeated confirmation returns the same linked transaction instead of creating a duplicate.
-- Provenance remains available through capture source, capture timestamp, status, and capture-to-transaction link.
+- Quick Capture requires only a positive amount; note is optional.
+- The PWA persists capture to an IndexedDB outbox before attempting the server request and retries with a stable UUID.
+- PostgreSQL `transaction_captures` stores pending capture state, provenance, classification fields, and eventual confirmed transaction linkage.
+- Pending captures remain excluded from balances, income/expense totals, and budget spending.
+- Confirmation creates the trusted transaction and capture linkage atomically and is idempotent.
 
 Trust rule:
 
@@ -115,56 +97,38 @@ confirmed transaction -> trusted financial calculations
 
 ## Implemented MVP budgeting
 
-Issue #6 adds the first planning capability on top of the trusted ledger.
-
 - A budget belongs to one household and one currency over an explicit inclusive date period.
-- The spending limit uses integer minor units.
 - Only confirmed expenses in the same household, currency, and period contribute to `spent`.
 - Income, transfers, pending captures, out-of-period expenses, and cross-currency expenses do not consume budget.
 - `remaining = limit - spent` and may become negative after overspending.
-- Overlapping budgets for the same household and currency are rejected; different currencies remain independent.
+- Overlapping budgets for the same household and currency are rejected.
 - Budget period boundaries currently use UTC calendar dates because household timezone is not yet modeled.
 - Category/envelope budgeting is deferred until transactions have trusted category semantics.
-- PostgreSQL persistence, Go domain/service behavior, REST endpoints, PWA creation/progress UI, integration tests, and self-hosted E2E coverage are implemented.
 - The durable decision is recorded in `docs/architecture/decisions/ADR-006-mvp-budget-model.md`.
+
+## Financial goal direction
+
+Issue #7 must model a goal as money that the household has **actually set aside** for a purpose, matching the real-world behavior of moving money into savings for that goal.
+
+Required invariants for the design:
+
+- Goal progress cannot be an arbitrary manually entered number.
+- Increasing goal progress must correspond to an explicit allocation/reservation of real household funds.
+- Reserved money remains part of household wealth but must be distinguishable from money available for ordinary spending.
+- Reserving money for a goal is not income or expense and must not distort income/expense reporting or budget spending.
+- The same money must not be reserved to multiple goals at once.
+- Releasing or moving reserved funds must be explicit and auditable.
+- Exact integer minor-unit monetary representation remains mandatory.
+
+The precise persistence and wallet interaction model will be finalized in ADR-007 as part of Issue #7 before implementation expands.
 
 ## Accepted MVP implementation architecture
 
-### Client
-- React
-- TypeScript
-- Vite
-- `vite-plugin-pwa`
-- IndexedDB + Dexie
-- Zod
-
-### Server
-- Go
-- `net/http` + `chi`
-- REST API
-- Modular monolith
-
-### Database
-- PostgreSQL
-- `pgx`
-- `sqlc`
-- Goose migrations
-
-### Authentication
-- Built-in self-hosted authentication direction
-- Argon2id password hashing
-- Server-side sessions with secure HttpOnly cookies
-
-Full login, household invitation, and authorization flows are not implemented yet.
-
-### Offline/sync direction
-- Local-first capture where appropriate using IndexedDB/Dexie
-- Stable client-generated IDs
-- Idempotent retry-safe synchronization
-- No blind last-write-wins for sensitive financial state
-- No CRDT/general distributed-database complexity for MVP
-
-Issue #5 implements only the narrow capture outbox needed for low-friction durability. It does not establish a generalized sync engine.
+- Client: React, TypeScript, Vite, PWA, IndexedDB/Dexie where appropriate.
+- Server: Go modular monolith, `net/http` + `chi`, REST API.
+- Database: PostgreSQL, `pgx`, `sqlc`, Goose migrations.
+- Authentication direction: built-in self-hosted auth with Argon2id and server-side secure sessions; full login/invitation/authorization flows remain incomplete.
+- Offline direction: local-first capture with stable IDs and idempotent retry; no generalized CRDT/sync engine for MVP.
 
 ## Distribution state
 
@@ -172,13 +136,12 @@ Docker Compose remains the first technical self-hosted path, not the final norma
 
 ## Still to decide / refine
 
-- Detailed permissions model
-- Complete login/session/household invitation behavior
-- Detailed generalized sync endpoint contract and conflict rules
+- Detailed permissions model and complete authentication/invitation behavior
+- Generalized sync contract and conflict rules
 - Packaging evolution from Docker Compose toward CLI/launcher/installer
 - Public demo hosting/deployment provider
 - Opening-balance and reconciliation semantics
-- Goal funding model
+- Exact goal reservation persistence/wallet interaction model (Issue #7 / ADR-007)
 - Household timezone semantics
 - Category model and future category/envelope budgeting
 - Database-level concurrency protection for overlapping budget creation
@@ -186,13 +149,15 @@ Docker Compose remains the first technical self-hosted path, not the final norma
 
 ## Current execution target
 
-Issue #6 is complete pending merge of PR #18. Select the next roadmap Issue after merge rather than expanding the budget slice with unrelated scope.
+**Issue #7 — Design and implement financial goals.**
+
+The accepted product direction is reserved-fund goals: progress represents money actually allocated to the goal, not manually reported progress.
 
 ## Next execution steps
 
-1. Merge PR #18 after the final documentation-only CI run is green.
-2. Select the next coherent roadmap Issue and deliver it as a vertical slice.
-3. Preserve the established trust boundary: only confirmed financial records affect balances, reporting, and budgets.
-4. Keep exact integer monetary representation and all three CI lanes green.
-5. Resolve opening balance/reconciliation and household timezone semantics only through explicit financial-domain decisions when needed.
-6. Defer generalized synchronization and automatic capture integrations until the current core remains trustworthy.
+1. Finalize ADR-007 for reserved-fund goal semantics and its interaction with wallets/transfers.
+2. Deliver Issue #7 as the smallest coherent vertical slice across domain, persistence, API, frontend UX, and verification.
+3. Ensure reserved funds remain household assets while being excluded from ordinary available-to-spend money.
+4. Preserve the established trust boundary and exact integer monetary representation.
+5. Keep web, server, and self-hosted E2E CI lanes green.
+6. Update product/data-model/current-state documentation as the goal slice becomes concrete.
