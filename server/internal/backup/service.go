@@ -23,11 +23,11 @@ var (
 )
 
 type Snapshot struct {
-	Format      string                      `json:"format"`
-	Version     int                         `json:"version"`
-	ExportedAt  time.Time                   `json:"exportedAt"`
-	HouseholdID uuid.UUID                   `json:"householdId"`
-	Tables      map[string][]map[string]any `json:"tables"`
+	Format      string                       `json:"format"`
+	Version     int                          `json:"version"`
+	ExportedAt  time.Time                    `json:"exportedAt"`
+	HouseholdID uuid.UUID                    `json:"householdId"`
+	Tables      map[string][]json.RawMessage `json:"tables"`
 }
 
 type Service struct {
@@ -41,35 +41,38 @@ var tableOrder = []string{"households", "household_members", "wallets", "transac
 var deleteOrder = []string{"wallet_reconciliations", "balance_adjustments", "goal_reservation_events", "transaction_captures", "financial_goals", "budgets", "transfers", "transactions", "wallets", "household_members"}
 
 func (s *Service) Export(ctx context.Context, householdID uuid.UUID) (Snapshot, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return Snapshot{}, err
+	}
+	defer tx.Rollback(ctx)
+
 	var exists bool
-	if err := s.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM households WHERE id=$1)", householdID).Scan(&exists); err != nil || !exists {
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM households WHERE id=$1)", householdID).Scan(&exists); err != nil || !exists {
 		if err == nil {
 			err = pgx.ErrNoRows
 		}
 		return Snapshot{}, err
 	}
-	out := Snapshot{Format: Format, Version: Version, ExportedAt: s.now().UTC(), HouseholdID: householdID, Tables: map[string][]map[string]any{}}
+
+	out := Snapshot{Format: Format, Version: Version, ExportedAt: s.now().UTC(), HouseholdID: householdID, Tables: map[string][]json.RawMessage{}}
 	for _, table := range tableOrder {
-		rows, err := s.pool.Query(ctx, fmt.Sprintf("SELECT to_jsonb(t) FROM %s t WHERE household_id=$1 ORDER BY id", table), householdID)
+		query := fmt.Sprintf("SELECT to_jsonb(t) FROM %s t WHERE household_id=$1 ORDER BY id", table)
 		if table == "households" {
-			rows, err = s.pool.Query(ctx, "SELECT to_jsonb(t) FROM households t WHERE id=$1", householdID)
+			query = "SELECT to_jsonb(t) FROM households t WHERE id=$1"
 		}
+		rows, err := tx.Query(ctx, query, householdID)
 		if err != nil {
 			return Snapshot{}, err
 		}
-		items := []map[string]any{}
+		items := []json.RawMessage{}
 		for rows.Next() {
 			var raw []byte
 			if err := rows.Scan(&raw); err != nil {
 				rows.Close()
 				return Snapshot{}, err
 			}
-			var item map[string]any
-			if json.Unmarshal(raw, &item) != nil {
-				rows.Close()
-				return Snapshot{}, ErrInvalidBackup
-			}
-			items = append(items, item)
+			items = append(items, append(json.RawMessage(nil), raw...))
 		}
 		if err := rows.Err(); err != nil {
 			rows.Close()
@@ -77,6 +80,9 @@ func (s *Service) Export(ctx context.Context, householdID uuid.UUID) (Snapshot, 
 		}
 		rows.Close()
 		out.Tables[table] = items
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return Snapshot{}, err
 	}
 	return out, nil
 }
@@ -98,19 +104,21 @@ func Validate(snapshot Snapshot, householdID uuid.UUID) error {
 	}
 	for _, name := range tableOrder {
 		for _, row := range snapshot.Tables[name] {
-			id, ok := row["id"].(string)
-			if !ok {
+			var identity struct {
+				ID          string `json:"id"`
+				HouseholdID string `json:"household_id"`
+			}
+			if err := json.Unmarshal(row, &identity); err != nil {
 				return ErrInvalidBackup
 			}
-			if _, err := uuid.Parse(id); err != nil {
+			if _, err := uuid.Parse(identity.ID); err != nil {
 				return ErrInvalidBackup
 			}
-			key := "household_id"
+			rowHouseholdID := identity.HouseholdID
 			if name == "households" {
-				key = "id"
+				rowHouseholdID = identity.ID
 			}
-			hv, ok := row[key].(string)
-			if !ok || hv != householdID.String() {
+			if rowHouseholdID != householdID.String() {
 				return ErrHouseholdMismatch
 			}
 		}
@@ -128,11 +136,17 @@ func (s *Service) Restore(ctx context.Context, householdID uuid.UUID, snapshot S
 	if err := Validate(snapshot, householdID); err != nil {
 		return err
 	}
+
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
+
+	var lockedID uuid.UUID
+	if err := tx.QueryRow(ctx, "SELECT id FROM households WHERE id=$1 FOR UPDATE", householdID).Scan(&lockedID); err != nil {
+		return err
+	}
 	for _, table := range deleteOrder {
 		if _, err := tx.Exec(ctx, fmt.Sprintf("DELETE FROM %s WHERE household_id=$1", table), householdID); err != nil {
 			return err
@@ -143,12 +157,8 @@ func (s *Service) Restore(ctx context.Context, householdID uuid.UUID, snapshot S
 	}
 	for _, table := range tableOrder {
 		for _, row := range snapshot.Tables[table] {
-			raw, err := json.Marshal(row)
-			if err != nil {
-				return ErrInvalidBackup
-			}
 			q := fmt.Sprintf("INSERT INTO %s SELECT * FROM jsonb_populate_record(NULL::%s,$1::jsonb)", table, table)
-			if _, err := tx.Exec(ctx, q, string(raw)); err != nil {
+			if _, err := tx.Exec(ctx, q, string(row)); err != nil {
 				return err
 			}
 		}
