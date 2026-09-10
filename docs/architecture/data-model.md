@@ -1,6 +1,6 @@
 # Data Model
 
-Status: Household, wallet, confirmed transaction, wallet transfer, and transaction capture/Inbox models are implemented. Later planning models remain conceptual until their implementation issues are completed.
+Status: Household, wallet, confirmed transaction, wallet transfer, transaction capture/Inbox, and MVP budget models are implemented. Later planning models remain conceptual until their implementation issues are completed.
 
 ## Household
 
@@ -141,7 +141,7 @@ Quick Capture
 ```
 
 - A pending capture may intentionally lack wallet and kind.
-- Pending captures never affect wallet balances, income/expense totals, or future budget calculations.
+- Pending captures never affect wallet balances, income/expense totals, or budget calculations.
 - Review requires an active wallet in the same household, a valid kind, and a positive amount.
 - Confirmation creates the confirmed `transactions` row and updates capture status/link atomically.
 - Repeating confirmation is idempotent: an already-confirmed capture resolves to its existing linked transaction instead of producing another one.
@@ -176,15 +176,29 @@ Implemented invariants:
 
 ## Budget
 
-Candidate concepts:
+`budgets` stores the household's explicit spending limit for one currency over an inclusive date period. Budget spending itself is derived from the confirmed transaction ledger rather than stored as mutable state.
 
-- household
-- period
-- amount
-- scope/category
-- spent amount derived from eligible confirmed expenses
+Implemented attributes:
 
-Final budgeting model remains open. Pending captures are explicitly untrusted for budget spending until confirmation.
+- `id` — application-generated UUID
+- `household_id` — required owning household
+- `currency` — three-letter uppercase currency code
+- `period_start` — inclusive calendar date
+- `period_end` — inclusive calendar date
+- `amount_minor` — positive `BIGINT` spending limit
+- `created_at`
+
+Implemented invariants and calculations:
+
+- A budget is household-wide for one currency; category/envelope scope is intentionally not part of the MVP model.
+- Budget amount must be strictly positive and `period_start` must not be after `period_end`.
+- Overlapping budgets for the same household and currency are rejected; different currencies are independent.
+- `spent` is derived only from confirmed `expense` transactions in the same household and currency whose occurrence falls within the period.
+- Income, transfers, out-of-period expenses, cross-currency expenses, and pending captures do not consume the budget.
+- `remaining = amount_minor - spent`; remaining may be negative after overspending.
+- Period boundaries currently use UTC calendar dates until household timezone semantics are modeled explicitly.
+
+The durable domain decision and rationale are recorded in `docs/architecture/decisions/ADR-006-mvp-budget-model.md`; user-facing semantics are summarized in `docs/product/budgeting.md`.
 
 ## Goal
 
