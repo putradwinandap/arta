@@ -10,12 +10,12 @@ import (
 )
 
 type HouseholdOverview struct {
-	Balances       []WalletBalance `json:"balances"`
-	Totals         HouseholdTotals `json:"totals"`
+	Balances       []WalletBalance  `json:"balances"`
+	Totals         HouseholdTotals  `json:"totals"`
 	CurrentBudgets []budget.Summary `json:"currentBudgets"`
-	ActiveGoals    []goal.Summary  `json:"activeGoals"`
-	Activity       []Activity      `json:"activity"`
-	RecentActivity []Activity      `json:"recentActivity"`
+	ActiveGoals    []goal.Summary   `json:"activeGoals"`
+	Activity       []Activity       `json:"activity"`
+	RecentActivity []Activity       `json:"recentActivity"`
 }
 
 // GetHouseholdOverview derives one landing-page view from existing trusted
@@ -61,7 +61,11 @@ func (s *Service) GetHouseholdOverview(ctx context.Context, householdID uuid.UUI
 	}
 
 	return HouseholdOverview{
-		Balances: balances, Totals: totals, CurrentBudgets: currentBudgets,
-		ActiveGoals: activeGoals, Activity: activity, RecentActivity: recentActivity,
+		Balances:       balances,
+		Totals:         totals,
+		CurrentBudgets: currentBudgets,
+		ActiveGoals:    activeGoals,
+		Activity:       activity,
+		RecentActivity: recentActivity,
 	}, nil
 }
