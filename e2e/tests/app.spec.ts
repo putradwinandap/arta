@@ -31,7 +31,7 @@ test('captures, budgets, reviews, and keeps confirmed finance trustworthy', asyn
   await expect(page.getByText('Coffee')).toBeVisible();
   await expect(page.getByRole('heading', { name: /1 pending review/i })).toBeVisible();
   await page.getByRole('button', { name: /refresh spending/i }).click();
-  await expect(page.locator('article.budget-card')).toContainText('Rp0');
+  await expect(page.locator('article.budget-card')).toContainText(/Spent Rp\s*0/);
 
   const inboxItem = page.locator('article.inbox-item').filter({ hasText: 'Coffee' });
   await inboxItem.getByRole('button', { name: 'Review' }).click();
