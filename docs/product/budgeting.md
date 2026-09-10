@@ -1,6 +1,6 @@
 # MVP Budgeting
 
-Status: Implemented by Issue #6 slice (pending merge)
+Status: Implemented by Issue #6 / PR #18
 
 ## Model
 
