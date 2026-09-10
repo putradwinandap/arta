@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/putradwinandap/arta/server/internal/capture"
 	"github.com/putradwinandap/arta/server/internal/ledger"
@@ -159,21 +159,27 @@ func IsCaptureInputError(err error) bool {
 
 func scanCapture(row rowScanner) (capture.Capture, error) {
 	var item capture.Capture
-	var walletID *uuid.UUID
-	var kind *string
+	var walletID pgtype.UUID
+	var confirmedTransactionID pgtype.UUID
+	var kind pgtype.Text
 	var source string
 	var status string
-	if err := row.Scan(&item.ID, &item.HouseholdID, &walletID, &kind, &item.AmountMinor, &item.Note, &source, &status, &item.CapturedAt, &item.UpdatedAt, &item.ConfirmedAt, &item.ConfirmedTransactionID); err != nil {
+	if err := row.Scan(&item.ID, &item.HouseholdID, &walletID, &kind, &item.AmountMinor, &item.Note, &source, &status, &item.CapturedAt, &item.UpdatedAt, &item.ConfirmedAt, &confirmedTransactionID); err != nil {
 		return capture.Capture{}, err
 	}
-	item.WalletID = walletID
-	if kind != nil {
-		parsed := ledger.Kind(*kind)
+	if walletID.Valid {
+		parsed := uuid.UUID(walletID.Bytes)
+		item.WalletID = &parsed
+	}
+	if kind.Valid {
+		parsed := ledger.Kind(kind.String)
 		item.Kind = &parsed
+	}
+	if confirmedTransactionID.Valid {
+		parsed := uuid.UUID(confirmedTransactionID.Bytes)
+		item.ConfirmedTransactionID = &parsed
 	}
 	item.Source = capture.Source(source)
 	item.Status = capture.Status(status)
 	return item, nil
 }
-
-var _ = pgx.ErrNoRows
