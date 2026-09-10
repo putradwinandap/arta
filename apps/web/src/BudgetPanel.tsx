@@ -2,18 +2,15 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createBudget, listBudgets, type BudgetSummary, type Wallet } from './lib/api';
 
 type Props = { householdId: string; wallets: Wallet[]; refreshKey: number };
-
-function formatMoney(amountMinor: number, currency: string) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amountMinor);
-}
-
+function formatMoney(amountMinor: number, currency: string) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amountMinor); }
 function dateOnly(value: string) { return value.slice(0, 10); }
+function localDate(value: Date) { return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`; }
 
 export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
   const currencies = useMemo(() => [...new Set(wallets.map((wallet) => wallet.currency))], [wallets]);
   const today = new Date();
   const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const monthEnd = localDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
   const [items, setItems] = useState<BudgetSummary[]>([]);
   const [currency, setCurrency] = useState(currencies[0] ?? 'IDR');
   const [periodStart, setPeriodStart] = useState(monthStart);
@@ -22,25 +19,19 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  async function refresh() {
-    try { setItems(await listBudgets(householdId)); }
-    catch (err) { setError(err instanceof Error ? err.message.replaceAll('_', ' ') : 'Could not load budgets.'); }
-  }
-
+  async function refresh() { try { setError(''); setItems(await listBudgets(householdId)); } catch (err) { setError(err instanceof Error ? err.message.replaceAll('_', ' ') : 'Could not load budgets.'); } }
   useEffect(() => { void refresh(); }, [householdId, refreshKey]);
   useEffect(() => { if (currencies.length && !currencies.includes(currency)) setCurrency(currencies[0]); }, [currencies, currency]);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setSaving(true); setError('');
-    try {
-      await createBudget(householdId, { currency, periodStart, periodEnd, amountMinor: Number(amount) });
-      setAmount(''); await refresh();
-    } catch (err) { setError(err instanceof Error ? err.message.replaceAll('_', ' ') : 'Could not create budget.'); }
+    try { await createBudget(householdId, { currency, periodStart, periodEnd, amountMinor: Number(amount) }); setAmount(''); await refresh(); }
+    catch (err) { setError(err instanceof Error ? err.message.replaceAll('_', ' ') : 'Could not create budget.'); }
     finally { setSaving(false); }
   }
 
   return <section className="panel budget-panel">
-    <div className="section-heading"><div><p className="eyebrow">Spending budget</p><h2>Plan a period, then track confirmed spending.</h2><p className="muted">Only confirmed expenses in the same currency and period count. Transfers and pending captures stay outside the budget.</p></div></div>
+    <div className="section-heading"><div><p className="eyebrow">Spending budget</p><h2>Plan a period, then track confirmed spending.</h2><p className="muted">Only confirmed expenses in the same currency and period count. Transfers and pending captures stay outside the budget.</p></div><button className="secondary" type="button" onClick={() => void refresh()}>Refresh spending</button></div>
     {error && <p className="alert" role="alert">{error}</p>}
     <div className="budget-grid">
       <form className="stack-form" onSubmit={submit}>
