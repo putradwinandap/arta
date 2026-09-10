@@ -2,10 +2,12 @@ package httpserver
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/putradwinandap/arta/server/internal/backup"
 	"github.com/putradwinandap/arta/server/internal/finance"
-	"net/http"
 )
 
 func New(pool *pgxpool.Pool) http.Handler {
@@ -19,10 +21,13 @@ func New(pool *pgxpool.Pool) http.Handler {
 		writeJSON(w, 200, map[string]string{"status": "ready"})
 	})
 	h := financeHandlers{service: finance.NewService(pool)}
+	bh := backupHandlers{service: backup.NewService(pool)}
 	r.Route("/api/households", func(r chi.Router) {
 		r.Post("/", h.createHousehold)
 		r.Get("/{householdID}", h.getHousehold)
 		r.Get("/{householdID}/finance", h.getFinanceOverview)
+		r.Get("/{householdID}/backup", bh.exportHousehold)
+		r.Post("/{householdID}/restore", bh.restoreHousehold)
 		r.Post("/{householdID}/transactions", h.createTransaction)
 		r.Post("/{householdID}/transfers", h.createTransfer)
 		r.Route("/{householdID}/budgets", func(r chi.Router) {
