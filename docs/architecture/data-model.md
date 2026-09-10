@@ -1,6 +1,6 @@
 # Data Model
 
-Status: Household, wallet, transaction, and wallet transfer are implemented. Later planning/capture models remain conceptual until their implementation issues are completed.
+Status: Household, wallet, confirmed transaction, wallet transfer, and transaction capture/Inbox models are implemented. Later planning models remain conceptual until their implementation issues are completed.
 
 ## Household
 
@@ -17,6 +17,7 @@ Implemented attributes:
 Household
   |-- Members
   |-- Wallets
+  |-- Transaction Captures
   |-- Transactions
   |-- Transfers
   |-- Budgets
@@ -62,7 +63,7 @@ Implemented invariants:
 
 ### Wallet balance
 
-Issue #4 deliberately does **not** add a mutable balance column. Current wallet balance is derived from the immutable financial records that affect that wallet:
+Current wallet balance is derived from confirmed immutable financial records that affect that wallet:
 
 ```text
 income
@@ -72,11 +73,11 @@ income
 = wallet balance
 ```
 
-This avoids dual sources of truth while the financial core is still being established. Reconciliation/opening-balance behavior remains future work.
+Pending captures are not part of this calculation. There is no mutable wallet balance column. Reconciliation/opening-balance behavior remains future work.
 
 ## Transaction
 
-A transaction is a confirmed household income or expense. It is intentionally separate from the later quick-capture/Transaction Inbox model.
+A transaction is a **confirmed** household income or expense. It is separate from `transaction_captures` so incomplete information never pollutes trusted financial calculations.
 
 Implemented attributes in `transactions`:
 
@@ -100,7 +101,54 @@ Implemented invariants:
 - Income contributes positively to wallet balance and household income total.
 - Expense contributes negatively to wallet balance and contributes to household expense total.
 
-Issue #4 does not add edit/delete semantics for historical transactions; auditability remains preferred over silent mutation.
+Historical transaction edit/delete semantics are intentionally not implemented; auditability remains preferred over silent mutation.
+
+## Transaction Capture / Transaction Inbox
+
+`transaction_captures` represents transaction information captured before it is trusted as a financial transaction.
+
+Implemented attributes:
+
+- `id` — client-generated UUID; also the retry/idempotency identity for capture creation
+- `household_id` — required household reference
+- `wallet_id` — nullable while pending
+- `kind` — nullable while pending; when present, `income` or `expense`
+- `amount_minor` — positive `BIGINT`; the only required financial input in Quick Capture
+- `note` — optional capture text stored as empty text when absent
+- `source` — currently `quick_manual`
+- `status` — `pending` or `confirmed`
+- `captured_at` — when the user originally captured the information
+- `updated_at`
+- `confirmed_at` — set only after confirmation
+- `confirmed_transaction_id` — unique reference to the confirmed transaction created from the capture
+
+Implemented invariants and lifecycle:
+
+```text
+Quick Capture
+(amount required; note optional)
+        |
+        v
+     pending
+        |
+        | review: add wallet + kind, edit amount/note
+        v
+ pending + ready
+        |
+        | confirm (single PostgreSQL transaction)
+        v
+     confirmed ----------> transactions.id
+```
+
+- A pending capture may intentionally lack wallet and kind.
+- Pending captures never affect wallet balances, income/expense totals, or future budget calculations.
+- Review requires an active wallet in the same household, a valid kind, and a positive amount.
+- Confirmation creates the confirmed `transactions` row and updates capture status/link atomically.
+- Repeating confirmation is idempotent: an already-confirmed capture resolves to its existing linked transaction instead of producing another one.
+- Capture creation is idempotent by the client-generated capture UUID. A retry with the same ID does not overwrite the original captured facts.
+- The PWA maintains a narrow IndexedDB capture outbox so a quick capture can survive temporary server/network unavailability and retry with the same stable ID.
+- This outbox is intentionally limited to the capture boundary; generalized offline synchronization remains future work.
+- Provenance is preserved through `source`, `captured_at`, and the capture-to-confirmed-transaction link instead of silently replacing the pending record.
 
 ## Transfer
 
@@ -136,7 +184,7 @@ Candidate concepts:
 - scope/category
 - spent amount derived from eligible confirmed expenses
 
-Final budgeting model remains open.
+Final budgeting model remains open. Pending captures are explicitly untrusted for budget spending until confirmation.
 
 ## Goal
 
@@ -149,7 +197,3 @@ Candidate concepts:
 - progress/funding relationship
 
 The funding/progress model remains open.
-
-## Captured transaction / Inbox state
-
-The system must support transaction information that exists before full classification or confirmation. This is not the same entity as the confirmed `transactions` introduced by Issue #4. The exact capture/Inbox persistence model remains intentionally deferred to Issue #5.

@@ -6,6 +6,7 @@ export type Household = {
 export type WalletType = 'cash' | 'bank' | 'e_wallet' | 'other';
 export type WalletStatus = 'active' | 'archived';
 export type TransactionKind = 'income' | 'expense';
+export type CaptureStatus = 'pending' | 'confirmed';
 
 export type Wallet = {
   id: string;
@@ -33,6 +34,21 @@ export type Activity = {
   currency: string;
   occurredAt: string;
   note?: string;
+};
+
+export type TransactionCapture = {
+  id: string;
+  householdId: string;
+  walletId?: string;
+  kind?: TransactionKind;
+  amountMinor: number;
+  note?: string;
+  source: 'quick_manual';
+  status: CaptureStatus;
+  capturedAt: string;
+  updatedAt: string;
+  confirmedAt?: string;
+  confirmedTransactionId?: string;
 };
 
 export type FinanceOverview = {
@@ -118,4 +134,29 @@ export function createTransfer(householdId: string, input: { sourceWalletId: str
 
 export function getFinanceOverview(householdId: string) {
   return request<FinanceOverview>(`/api/households/${householdId}/finance`);
+}
+
+export function createCapture(householdId: string, input: { id: string; amountMinor: number; note?: string; capturedAt?: string }) {
+  return request<TransactionCapture>(`/api/households/${householdId}/captures/`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listPendingCaptures(householdId: string) {
+  const response = await request<{ captures: TransactionCapture[] }>(`/api/households/${householdId}/captures/`);
+  return response.captures;
+}
+
+export function reviewCapture(householdId: string, captureId: string, input: { walletId: string; kind: TransactionKind; amountMinor: number; note?: string }) {
+  return request<TransactionCapture>(`/api/households/${householdId}/captures/${captureId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function confirmCapture(householdId: string, captureId: string) {
+  return request(`/api/households/${householdId}/captures/${captureId}/confirm`, {
+    method: 'POST',
+  });
 }
