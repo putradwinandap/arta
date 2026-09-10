@@ -18,6 +18,28 @@ The central problem Arta solves is not only budgeting, but making sure family tr
 - Transfers between wallets
 - Household / family members
 
+## Install and run locally
+
+The supported self-hosted MVP path only requires Docker with Docker Compose v2.
+
+Windows PowerShell:
+
+```powershell
+.\scripts\arta.ps1 setup
+.\scripts\arta.ps1 start
+```
+
+macOS/Linux/POSIX shell:
+
+```sh
+sh scripts/arta.sh setup
+sh scripts/arta.sh start
+```
+
+Then open `http://localhost:8080`. The launcher generates local secrets, starts PostgreSQL, applies migrations, and starts the full Arta stack without requiring host installations of Node.js, Go, or PostgreSQL.
+
+See [`docs/development/install.md`](./docs/development/install.md) for prerequisites, stop/update commands, configuration, and data-safety notes. Contributors should use [`docs/development/setup.md`](./docs/development/setup.md).
+
 ## Source of truth
 
 This repository is the project brain for Arta.
@@ -37,4 +59,4 @@ Arta is intended to be developed with an AI-native engineering workflow. Chat co
 
 ## Status
 
-Current phase: **Product discovery and foundation**.
+Current phase: **Planning and reliability MVP slices**.
