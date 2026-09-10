@@ -20,9 +20,11 @@ type Service struct {
 }
 
 type WalletBalance struct {
-	WalletID    uuid.UUID `json:"walletId"`
-	AmountMinor int64     `json:"amountMinor"`
-	Currency    string    `json:"currency"`
+	WalletID       uuid.UUID `json:"walletId"`
+	AmountMinor    int64     `json:"amountMinor"`
+	ReservedMinor  int64     `json:"reservedMinor"`
+	AvailableMinor int64     `json:"availableMinor"`
+	Currency       string    `json:"currency"`
 }
 
 type HouseholdTotals struct {
