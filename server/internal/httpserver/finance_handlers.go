@@ -43,20 +43,20 @@ func (h financeHandlers) createHousehold(w http.ResponseWriter, r *http.Request)
 }
 
 func (h financeHandlers) getHousehold(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	id, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
-	house, err := h.service.GetHousehold(r.Context(), householdID)
+	v, err := h.service.GetHousehold(r.Context(), id)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, house)
+	writeJSON(w, http.StatusOK, v)
 }
 
 func (h financeHandlers) createWallet(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
@@ -69,50 +69,50 @@ func (h financeHandlers) createWallet(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
-	created, err := h.service.CreateWallet(r.Context(), householdID, input.Name, input.Type, input.Currency)
+	v, err := h.service.CreateWallet(r.Context(), hID, input.Name, input.Type, input.Currency)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, created)
+	writeJSON(w, http.StatusCreated, v)
 }
 
 func (h financeHandlers) listWallets(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
-	wallets, err := h.service.ListWallets(r.Context(), householdID)
+	v, err := h.service.ListWallets(r.Context(), hID)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"wallets": wallets})
+	writeJSON(w, http.StatusOK, map[string]any{"wallets": v})
 }
 
 func (h financeHandlers) getWallet(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
-	walletID, ok := pathUUID(w, r, "walletID")
+	wID, ok := pathUUID(w, r, "walletID")
 	if !ok {
 		return
 	}
-	walletValue, err := h.service.GetWallet(r.Context(), householdID, walletID)
+	v, err := h.service.GetWallet(r.Context(), hID, wID)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, walletValue)
+	writeJSON(w, http.StatusOK, v)
 }
 
 func (h financeHandlers) updateWallet(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
-	walletID, ok := pathUUID(w, r, "walletID")
+	wID, ok := pathUUID(w, r, "walletID")
 	if !ok {
 		return
 	}
@@ -124,33 +124,33 @@ func (h financeHandlers) updateWallet(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
-	updated, err := h.service.UpdateWallet(r.Context(), householdID, walletID, input.Name, input.Type)
+	v, err := h.service.UpdateWallet(r.Context(), hID, wID, input.Name, input.Type)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, updated)
+	writeJSON(w, http.StatusOK, v)
 }
 
 func (h financeHandlers) archiveWallet(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
-	walletID, ok := pathUUID(w, r, "walletID")
+	wID, ok := pathUUID(w, r, "walletID")
 	if !ok {
 		return
 	}
-	archived, err := h.service.ArchiveWallet(r.Context(), householdID, walletID)
+	v, err := h.service.ArchiveWallet(r.Context(), hID, wID)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, archived)
+	writeJSON(w, http.StatusOK, v)
 }
 
 func (h financeHandlers) createTransaction(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
@@ -165,25 +165,25 @@ func (h financeHandlers) createTransaction(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
-	walletID, err := uuid.Parse(input.WalletID)
+	wID, err := uuid.Parse(input.WalletID)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_wallet_id")
 		return
 	}
-	occurredAt := time.Now()
+	at := time.Now()
 	if input.OccurredAt != nil {
-		occurredAt = *input.OccurredAt
+		at = *input.OccurredAt
 	}
-	created, err := h.service.CreateTransaction(r.Context(), householdID, walletID, input.Kind, input.AmountMinor, occurredAt, input.Note)
+	v, err := h.service.CreateTransaction(r.Context(), hID, wID, input.Kind, input.AmountMinor, at, input.Note)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, created)
+	writeJSON(w, http.StatusCreated, v)
 }
 
 func (h financeHandlers) createTransfer(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
@@ -198,49 +198,39 @@ func (h financeHandlers) createTransfer(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
-	sourceID, err := uuid.Parse(input.SourceWalletID)
+	source, err := uuid.Parse(input.SourceWalletID)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_source_wallet_id")
 		return
 	}
-	destinationID, err := uuid.Parse(input.DestinationWalletID)
+	dest, err := uuid.Parse(input.DestinationWalletID)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_destination_wallet_id")
 		return
 	}
-	occurredAt := time.Now()
+	at := time.Now()
 	if input.OccurredAt != nil {
-		occurredAt = *input.OccurredAt
+		at = *input.OccurredAt
 	}
-	created, err := h.service.CreateTransfer(r.Context(), householdID, sourceID, destinationID, input.AmountMinor, occurredAt, input.Note)
+	v, err := h.service.CreateTransfer(r.Context(), hID, source, dest, input.AmountMinor, at, input.Note)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, created)
+	writeJSON(w, http.StatusCreated, v)
 }
 
 func (h financeHandlers) getFinanceOverview(w http.ResponseWriter, r *http.Request) {
-	householdID, ok := pathUUID(w, r, "householdID")
+	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {
 		return
 	}
-	balances, err := h.service.WalletAvailableBalances(r.Context(), householdID)
+	v, err := h.service.GetHouseholdOverview(r.Context(), hID)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
 	}
-	totals, err := h.service.HouseholdTotals(r.Context(), householdID)
-	if err != nil {
-		handleFinanceError(w, err)
-		return
-	}
-	activity, err := h.service.ListActivity(r.Context(), householdID)
-	if err != nil {
-		handleFinanceError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"balances": balances, "totals": totals, "activity": activity})
+	writeJSON(w, http.StatusOK, v)
 }
 
 func pathUUID(w http.ResponseWriter, r *http.Request, key string) (uuid.UUID, bool) {
@@ -263,17 +253,7 @@ func handleFinanceError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "not_found")
 		return
 	}
-	if errors.Is(err, household.ErrInvalidHouseholdName) ||
-		errors.Is(err, household.ErrInvalidSubjectID) ||
-		errors.Is(err, wallet.ErrInvalidName) ||
-		errors.Is(err, wallet.ErrInvalidType) ||
-		errors.Is(err, wallet.ErrInvalidCurrency) ||
-		errors.Is(err, wallet.ErrInvalidHousehold) ||
-		errors.Is(err, wallet.ErrWalletArchived) ||
-		finance.IsLedgerInputError(err) ||
-		finance.IsCaptureInputError(err) ||
-		finance.IsBudgetInputError(err) ||
-		finance.IsGoalInputError(err) {
+	if errors.Is(err, household.ErrInvalidHouseholdName) || errors.Is(err, household.ErrInvalidSubjectID) || errors.Is(err, wallet.ErrInvalidName) || errors.Is(err, wallet.ErrInvalidType) || errors.Is(err, wallet.ErrInvalidCurrency) || errors.Is(err, wallet.ErrInvalidHousehold) || errors.Is(err, wallet.ErrWalletArchived) || finance.IsLedgerInputError(err) || finance.IsCaptureInputError(err) || finance.IsBudgetInputError(err) || finance.IsGoalInputError(err) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
