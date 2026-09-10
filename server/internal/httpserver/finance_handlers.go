@@ -270,7 +270,8 @@ func handleFinanceError(w http.ResponseWriter, err error) {
 		errors.Is(err, wallet.ErrInvalidCurrency) ||
 		errors.Is(err, wallet.ErrInvalidHousehold) ||
 		errors.Is(err, wallet.ErrWalletArchived) ||
-		finance.IsLedgerInputError(err) {
+		finance.IsLedgerInputError(err) ||
+		finance.IsCaptureInputError(err) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
