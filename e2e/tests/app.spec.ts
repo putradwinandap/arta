@@ -40,22 +40,27 @@ test('captures, budgets, reviews, and keeps confirmed finance trustworthy', asyn
   await page.getByRole('button', { name: /save review/i }).click();
   await inboxItem.getByRole('button', { name: 'Confirm' }).click();
   await expect(page.getByRole('heading', { name: /0 pending review/i })).toBeVisible();
+  await expect(page.locator('article.activity-row').filter({ hasText: 'Coffee' })).toBeVisible();
 
   await page.getByLabel('Transaction type').selectOption('income');
   await page.getByLabel('Transaction wallet').selectOption({ label: 'BCA Utama' });
   await page.getByLabel('Transaction amount').fill('1000000');
   await page.getByLabel('Transaction note').fill('Salary');
   await page.getByRole('button', { name: /record income/i }).click();
+  await expect(page.locator('article.activity-row').filter({ hasText: 'Salary' })).toBeVisible();
+
   await page.getByLabel('Transaction type').selectOption('expense');
   await page.getByLabel('Transaction amount').fill('250000');
   await page.getByLabel('Transaction note').fill('Groceries');
   await page.getByRole('button', { name: /record expense/i }).click();
+  await expect(page.locator('article.activity-row').filter({ hasText: 'Groceries' })).toBeVisible();
 
   await page.getByLabel('Transfer source').selectOption({ label: 'BCA Utama' });
   await page.getByLabel('Transfer destination').selectOption({ label: 'Cash Rumah' });
   await page.getByLabel('Transfer amount').fill('300000');
   await page.getByLabel('Transfer note').fill('Cash allocation');
   await page.getByRole('button', { name: /transfer money/i }).click();
+  await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
 
   await page.getByRole('button', { name: /refresh spending/i }).click();
   const budget = page.locator('article.budget-card');
@@ -70,6 +75,8 @@ test('captures, budgets, reviews, and keeps confirmed finance trustworthy', asyn
 
   await page.reload();
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /0 pending review/i })).toBeVisible();
   await expect(page.locator('article.budget-card')).toContainText('275.000');
   await expect(page.locator('article.activity-row').filter({ hasText: 'Coffee' })).toBeVisible();
+  await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
 });
