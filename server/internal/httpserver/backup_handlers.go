@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/putradwinandap/arta/server/internal/backup"
 )
 
@@ -32,17 +31,15 @@ func (h backupHandlers) restoreHousehold(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	var input struct {
-		Confirm bool            `json:"confirm"`
-		Backup  backup.Snapshot `json:"backup"`
-	}
+	confirmed := r.Header.Get("X-Arta-Restore-Confirm") == "replace"
+	var snapshot backup.Snapshot
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 20<<20))
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&input); err != nil {
+	if err := decoder.Decode(&snapshot); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_backup")
 		return
 	}
-	if err := h.service.Restore(r.Context(), id, input.Backup, input.Confirm); err != nil {
+	if err := h.service.Restore(r.Context(), id, snapshot, confirmed); err != nil {
 		handleBackupError(w, err)
 		return
 	}
@@ -61,5 +58,3 @@ func handleBackupError(w http.ResponseWriter, err error) {
 		handleFinanceError(w, err)
 	}
 }
-
-var _ = uuid.Nil
