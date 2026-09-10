@@ -13,27 +13,15 @@ Introducing category-based or envelope budgeting now would require widening the 
 
 For MVP, a budget is a **household-wide spending limit for one currency over an explicit date period**.
 
-A budget stores:
+A budget stores household, currency, inclusive period start/end dates, and amount in integer minor units. Budget spending is derived, never stored as mutable truth.
 
-- household
-- currency
-- period start date (inclusive)
-- period end date (inclusive)
-- amount in integer minor units
-
-Budget spending is derived, never stored as mutable truth.
-
-Eligible spending is the sum of confirmed `expense` transactions that:
-
-1. belong to the same household,
-2. use the budget currency, and
-3. occurred within the budget period.
-
-Income does not consume a budget. Transfers do not consume a budget. Pending/untrusted transaction captures do not consume a budget until they are confirmed into the trusted transaction ledger.
+Eligible spending is the sum of confirmed `expense` transactions that belong to the same household, use the budget currency, and occurred within the budget period. Income does not consume a budget. Transfers do not consume a budget. Pending/untrusted transaction captures do not consume a budget until they are confirmed into the trusted transaction ledger.
 
 Remaining amount is `budget amount - eligible spent amount`. Remaining may become negative when spending exceeds the budget.
 
 For MVP, overlapping budgets for the same household and currency are rejected so the meaning of "the budget for this period" stays unambiguous. Category and envelope scopes remain future product work.
+
+Arta does not yet model a household timezone. Until that exists, budget period boundaries are evaluated as UTC calendar dates. Changing this later requires an explicit domain decision because it can change which edge-of-day transactions belong to a period.
 
 ## Consequences
 
@@ -42,3 +30,4 @@ For MVP, overlapping budgets for the same household and currency are rejected so
 - Exact integer monetary representation is preserved.
 - Multi-currency households can create independent budgets per currency.
 - Users cannot yet maintain separate grocery, transport, or envelope budgets; that requires a later explicit product/domain decision and transaction-category model.
+- Household timezone becomes a known follow-up domain concern rather than an implicit server-timezone behavior.
