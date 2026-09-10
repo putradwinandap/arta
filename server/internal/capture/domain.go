@@ -15,32 +15,32 @@ type Status string
 type Source string
 
 const (
-	StatusPending   Status = "pending"
-	StatusConfirmed Status = "confirmed"
+	StatusPending     Status = "pending"
+	StatusConfirmed   Status = "confirmed"
 	SourceQuickManual Source = "quick_manual"
 )
 
 var (
-	ErrInvalidCaptureID = errors.New("invalid_capture_id")
-	ErrInvalidHousehold = errors.New("invalid_household")
-	ErrInvalidAmount = errors.New("invalid_amount")
-	ErrAlreadyConfirmed = errors.New("capture_already_confirmed")
+	ErrInvalidCaptureID  = errors.New("invalid_capture_id")
+	ErrInvalidHousehold  = errors.New("invalid_household")
+	ErrInvalidAmount     = errors.New("invalid_amount")
+	ErrAlreadyConfirmed  = errors.New("capture_already_confirmed")
 	ErrIncompleteCapture = errors.New("incomplete_capture")
 )
 
 type Capture struct {
-	ID                     uuid.UUID   `json:"id"`
-	HouseholdID            uuid.UUID   `json:"householdId"`
-	WalletID               *uuid.UUID  `json:"walletId,omitempty"`
+	ID                     uuid.UUID    `json:"id"`
+	HouseholdID            uuid.UUID    `json:"householdId"`
+	WalletID               *uuid.UUID   `json:"walletId,omitempty"`
 	Kind                   *ledger.Kind `json:"kind,omitempty"`
-	AmountMinor            int64       `json:"amountMinor"`
-	Note                   string      `json:"note,omitempty"`
-	Source                 Source      `json:"source"`
-	Status                 Status      `json:"status"`
-	CapturedAt             time.Time   `json:"capturedAt"`
-	UpdatedAt              time.Time   `json:"updatedAt"`
-	ConfirmedAt            *time.Time  `json:"confirmedAt,omitempty"`
-	ConfirmedTransactionID *uuid.UUID  `json:"confirmedTransactionId,omitempty"`
+	AmountMinor            int64        `json:"amountMinor"`
+	Note                   string       `json:"note,omitempty"`
+	Source                 Source       `json:"source"`
+	Status                 Status       `json:"status"`
+	CapturedAt             time.Time    `json:"capturedAt"`
+	UpdatedAt              time.Time    `json:"updatedAt"`
+	ConfirmedAt            *time.Time   `json:"confirmedAt,omitempty"`
+	ConfirmedTransactionID *uuid.UUID   `json:"confirmedTransactionId,omitempty"`
 }
 
 func New(id, householdID uuid.UUID, amountMinor int64, note string, capturedAt time.Time) (Capture, error) {
@@ -58,14 +58,14 @@ func New(id, householdID uuid.UUID, amountMinor int64, note string, capturedAt t
 	}
 	capturedAt = capturedAt.UTC()
 	return Capture{
-		ID: id,
+		ID:          id,
 		HouseholdID: householdID,
 		AmountMinor: amountMinor,
-		Note: strings.TrimSpace(note),
-		Source: SourceQuickManual,
-		Status: StatusPending,
-		CapturedAt: capturedAt,
-		UpdatedAt: capturedAt,
+		Note:        strings.TrimSpace(note),
+		Source:      SourceQuickManual,
+		Status:      StatusPending,
+		CapturedAt:  capturedAt,
+		UpdatedAt:   capturedAt,
 	}, nil
 }
 
