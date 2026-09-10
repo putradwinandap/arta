@@ -13,14 +13,5 @@ CREATE TABLE budgets (
 CREATE INDEX budgets_household_period_idx
     ON budgets(household_id, currency, period_start, period_end);
 
--- Prevent overlapping household-wide budgets in the same currency.
-ALTER TABLE budgets
-    ADD CONSTRAINT budgets_no_overlap
-    EXCLUDE USING gist (
-        household_id WITH =,
-        currency WITH =,
-        daterange(period_start, period_end, '[]') WITH &&
-    );
-
 -- +goose Down
 DROP TABLE budgets;
