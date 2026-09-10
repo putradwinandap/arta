@@ -1,0 +1,27 @@
+name: Update Goal Docs
+on:
+  push:
+    branches: [issue-7-financial-goals]
+permissions:
+  contents: write
+jobs:
+  docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('docs/architecture/data-model.md')
+          s=p.read_text()
+          old='''## Goal\n\nCandidate concepts:\n\n- household\n- name\n- target_amount\n- target_date (optional)\n- progress/funding relationship\n\nThe funding/progress model remains open.\n'''
+          new='''## Financial Goal\n\n`financial_goals` stores a household savings target while `goal_reservation_events` is the auditable source of truth for money actually reserved toward it.\n\nImplemented goal attributes:\n\n- `id` — application-generated UUID\n- `household_id` — required household reference\n- `name` — non-empty goal name\n- `currency` — three-letter uppercase currency\n- `target_amount_minor` — positive `BIGINT` target\n- `status` — `active` or `archived`\n- `archived_at`, `created_at`, `updated_at`\n\nImplemented reservation event attributes:\n\n- `id`, `goal_id`, `household_id`, `wallet_id`\n- `kind` — `reserve` or `release`\n- `amount_minor` — positive `BIGINT`\n- `created_at`\n\nGoal progress is derived as reserves minus releases. Reservations are tied to a real source wallet of the same currency. They do not change physical wallet balance, household income/expense totals, transfers, or budget spending. Wallet `reserved` is the sum of active reservation history sourced from that wallet, and `available = physical balance - reserved`. New reservations cannot exceed available funds, preventing the same money from backing multiple goals. Releases cannot exceed the amount reserved by that goal from that wallet. Archiving does not silently release money.\n\nThe durable decision is recorded in `docs/architecture/decisions/ADR-007-reserved-fund-financial-goals.md`; product semantics are in `docs/product/financial-goals.md`.\n'''
+          if old not in s: raise SystemExit('goal section not found')
+          p.write_text(s.replace(old,new).replace('Household, wallet, confirmed transaction, wallet transfer, transaction capture/Inbox, and MVP budget models are implemented. Later planning models remain conceptual until their implementation issues are completed.','Household, wallet, confirmed transaction, wallet transfer, transaction capture/Inbox, MVP budget, and reserved-fund financial goal models are implemented.'))
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/architecture/data-model.md
+          git commit -m "docs: record reserved-fund goal data model"
+          git push
