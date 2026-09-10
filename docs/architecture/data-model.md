@@ -1,6 +1,6 @@
 # Data Model
 
-Status: Household, wallet, confirmed transaction, wallet transfer, transaction capture/Inbox, and MVP budget models are implemented. Later planning models remain conceptual until their implementation issues are completed.
+Status: Household, wallet, confirmed transaction, wallet transfer, transaction capture/Inbox, MVP budget, and reserved-fund financial goal models are implemented.
 
 ## Household
 
@@ -200,14 +200,27 @@ Implemented invariants and calculations:
 
 The durable domain decision and rationale are recorded in `docs/architecture/decisions/ADR-006-mvp-budget-model.md`; user-facing semantics are summarized in `docs/product/budgeting.md`.
 
-## Goal
+## Financial Goal
 
-Candidate concepts:
+`financial_goals` stores a household savings target while `goal_reservation_events` is the auditable source of truth for money actually reserved toward it.
 
-- household
-- name
-- target_amount
-- target_date (optional)
-- progress/funding relationship
+Implemented goal attributes:
 
-The funding/progress model remains open.
+- `id` — application-generated UUID
+- `household_id` — required household reference
+- `name` — non-empty goal name
+- `currency` — three-letter uppercase currency
+- `target_amount_minor` — positive `BIGINT` target
+- `status` — `active` or `archived`
+- `archived_at`, `created_at`, `updated_at`
+
+Implemented reservation event attributes:
+
+- `id`, `goal_id`, `household_id`, `wallet_id`
+- `kind` — `reserve` or `release`
+- `amount_minor` — positive `BIGINT`
+- `created_at`
+
+Goal progress is derived as reserves minus releases. Reservations are tied to a real source wallet of the same currency. They do not change physical wallet balance, household income/expense totals, transfers, or budget spending. Wallet `reserved` is the sum of active reservation history sourced from that wallet, and `available = physical balance - reserved`. New reservations cannot exceed available funds, preventing the same money from backing multiple goals. Releases cannot exceed the amount reserved by that goal from that wallet. Archiving does not silently release money.
+
+The durable decision is recorded in `docs/architecture/decisions/ADR-007-reserved-fund-financial-goals.md`; product semantics are in `docs/product/financial-goals.md`.
