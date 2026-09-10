@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/putradwinandap/arta/server/internal/budget"
 )
@@ -81,5 +80,3 @@ GROUP BY b.id`, householdID, budgetID).Scan(&value.ID, &value.HouseholdID, &valu
 func IsBudgetInputError(err error) bool {
 	return errors.Is(err, budget.ErrInvalidHousehold) || errors.Is(err, budget.ErrInvalidAmount) || errors.Is(err, budget.ErrInvalidCurrency) || errors.Is(err, budget.ErrInvalidPeriod) || errors.Is(err, budget.ErrOverlap)
 }
-
-var _ = pgx.ErrNoRows
