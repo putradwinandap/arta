@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { QuickCaptureInbox } from './QuickCaptureInbox';
 import {
   archiveWallet,
   createHousehold,
@@ -164,18 +165,20 @@ export function App() {
   }
 
   return <main className="app-shell">
-    <header className="topbar"><div><p className="eyebrow">Arta household</p><h1>{household.name}</h1><p className="muted">Wallets, income, expenses, and transfers in one trustworthy ledger.</p></div><div className="summary-chip">{activeWallets.length} active wallet{activeWallets.length === 1 ? '' : 's'}</div></header>
+    <header className="topbar"><div><p className="eyebrow">Arta household</p><h1>{household.name}</h1><p className="muted">Capture quickly, review later, and keep confirmed money trustworthy.</p></div><div className="summary-chip">{activeWallets.length} active wallet{activeWallets.length === 1 ? '' : 's'}</div></header>
     {error && <p className="alert" role="alert">{error}</p>}
+
+    <QuickCaptureInbox householdId={household.id} wallets={activeWallets} onConfirmed={() => refresh(household.id)} />
 
     <section className="finance-summary">
       <article className="summary-card"><span>Income</span><strong>{formatMoney(overview.totals.incomeMinor)}</strong></article>
       <article className="summary-card"><span>Expense</span><strong>{formatMoney(overview.totals.expenseMinor)}</strong></article>
-      <article className="summary-card"><span>Net</span><strong>{formatMoney(overview.totals.incomeMinor - overview.totals.expenseMinor)}</strong><small>Transfers excluded</small></article>
+      <article className="summary-card"><span>Net</span><strong>{formatMoney(overview.totals.incomeMinor - overview.totals.expenseMinor)}</strong><small>Transfers and pending captures excluded</small></article>
     </section>
 
     <section className="layout-grid">
       <section className="panel"><div className="section-heading"><div><p className="eyebrow">Wallets</p><h2>Your money locations</h2></div></div>
-        {wallets.length === 0 ? <div className="empty-state"><h3>No wallets yet</h3><p>Add at least one wallet before recording financial activity.</p></div> : <div className="wallet-list">
+        {wallets.length === 0 ? <div className="empty-state"><h3>No wallets yet</h3><p>Add at least one wallet before confirming financial activity.</p></div> : <div className="wallet-list">
           {activeWallets.map((wallet) => <article className="wallet-card" key={wallet.id}>
             {editingWalletId === wallet.id ? <form className="edit-form" onSubmit={(event) => handleUpdateWallet(event, wallet.id)}><label>Wallet name<input value={editName} onChange={(event) => setEditName(event.target.value)} required maxLength={120} /></label><label>Type<select value={editType} onChange={(event) => setEditType(event.target.value as WalletType)}>{walletTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><div className="button-row"><button type="submit" disabled={saving}>Save</button><button type="button" className="secondary" onClick={() => setEditingWalletId(null)}>Cancel</button></div></form> : <><div><span className="wallet-type">{walletTypes.find((item) => item.value === wallet.type)?.label}</span><h3>{wallet.name}</h3><p className="wallet-balance">{formatMoney(balanceByWallet.get(wallet.id)?.amountMinor ?? 0, wallet.currency)}</p></div><div className="wallet-actions"><button className="secondary" type="button" onClick={() => beginEdit(wallet)}>Edit</button><button className="danger" type="button" onClick={() => handleArchive(wallet.id)} disabled={saving}>Archive</button></div></>}
           </article>)}
@@ -186,11 +189,11 @@ export function App() {
     </section>
 
     {activeWallets.length > 0 && <section className="finance-grid">
-      <section className="panel transaction-panel"><p className="eyebrow">Record money</p><h2>Income or expense</h2><form className="stack-form" onSubmit={handleTransaction}><label>Type<select aria-label="Transaction type" value={transactionKind} onChange={(event) => setTransactionKind(event.target.value as TransactionKind)}><option value="expense">Expense</option><option value="income">Income</option></select></label><label>Wallet<select aria-label="Transaction wallet" value={transactionWalletId} onChange={(event) => setTransactionWalletId(event.target.value)}>{activeWallets.map((wallet) => <option value={wallet.id} key={wallet.id}>{wallet.name}</option>)}</select></label><label>Amount<input aria-label="Transaction amount" type="number" min="1" step="1" value={transactionAmount} onChange={(event) => setTransactionAmount(event.target.value)} required /></label><label>Note<input aria-label="Transaction note" value={transactionNote} onChange={(event) => setTransactionNote(event.target.value)} placeholder="Groceries" /></label><button disabled={saving}>Record {transactionKind}</button></form></section>
+      <section className="panel transaction-panel"><p className="eyebrow">Record confirmed money</p><h2>Income or expense</h2><form className="stack-form" onSubmit={handleTransaction}><label>Type<select aria-label="Transaction type" value={transactionKind} onChange={(event) => setTransactionKind(event.target.value as TransactionKind)}><option value="expense">Expense</option><option value="income">Income</option></select></label><label>Wallet<select aria-label="Transaction wallet" value={transactionWalletId} onChange={(event) => setTransactionWalletId(event.target.value)}>{activeWallets.map((wallet) => <option value={wallet.id} key={wallet.id}>{wallet.name}</option>)}</select></label><label>Amount<input aria-label="Transaction amount" type="number" min="1" step="1" value={transactionAmount} onChange={(event) => setTransactionAmount(event.target.value)} required /></label><label>Note<input aria-label="Transaction note" value={transactionNote} onChange={(event) => setTransactionNote(event.target.value)} placeholder="Groceries" /></label><button disabled={saving}>Record {transactionKind}</button></form></section>
       <section className="panel transfer-panel"><p className="eyebrow">Move money</p><h2>Wallet transfer</h2>{activeWallets.length < 2 ? <div className="empty-state"><p>Add another active wallet to transfer money.</p></div> : <form className="stack-form" onSubmit={handleTransfer}><label>From<select aria-label="Transfer source" value={transferSourceId} onChange={(event) => setTransferSourceId(event.target.value)}>{activeWallets.map((wallet) => <option value={wallet.id} key={wallet.id}>{wallet.name}</option>)}</select></label><label>To<select aria-label="Transfer destination" value={transferDestinationId} onChange={(event) => setTransferDestinationId(event.target.value)}>{activeWallets.map((wallet) => <option value={wallet.id} key={wallet.id}>{wallet.name}</option>)}</select></label><label>Amount<input aria-label="Transfer amount" type="number" min="1" step="1" value={transferAmount} onChange={(event) => setTransferAmount(event.target.value)} required /></label><label>Note<input aria-label="Transfer note" value={transferNote} onChange={(event) => setTransferNote(event.target.value)} placeholder="Move to savings" /></label><button disabled={saving}>Transfer money</button></form>}</section>
     </section>}
 
-    <section className="panel activity-panel"><p className="eyebrow">History</p><h2>Recent activity</h2>{overview.activity.length === 0 ? <div className="empty-state"><p>No financial activity yet.</p></div> : <div className="activity-list">{overview.activity.map((item) => {
+    <section className="panel activity-panel"><p className="eyebrow">Confirmed history</p><h2>Recent activity</h2>{overview.activity.length === 0 ? <div className="empty-state"><p>No confirmed financial activity yet.</p></div> : <div className="activity-list">{overview.activity.map((item) => {
       const wallet = item.walletId ? walletById.get(item.walletId) : undefined;
       const source = item.sourceWalletId ? walletById.get(item.sourceWalletId) : undefined;
       const destination = item.destinationWalletId ? walletById.get(item.destinationWalletId) : undefined;
