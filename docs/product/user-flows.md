@@ -1,22 +1,48 @@
 # User Flows
 
-These are conceptual flows. UI details are intentionally not fixed yet.
+These flows describe current product behavior where implemented and mark future behavior explicitly.
 
 ## Quick expense capture
 
-1. Member triggers quick capture.
-2. Member enters the minimum available transaction information, ideally amount plus wallet when needed.
-3. Arta stores the captured transaction.
-4. If required details are missing or uncertain, the transaction enters the Transaction Inbox.
-5. Member can continue their activity immediately rather than completing a long form.
+Implemented in Issue #5:
+
+1. Member opens the household app and focuses the prominent Quick Capture form.
+2. Member enters **amount only**. A short note is optional.
+3. Before any network request, the PWA stores the capture in its IndexedDB outbox with a client-generated UUID and capture timestamp.
+4. The PWA sends that same capture ID to the Arta Server when reachable.
+5. The server stores it as a `pending` capture. Wallet and transaction kind are intentionally allowed to be absent.
+6. If the server is temporarily unreachable, the local outbox keeps the input and retries when connectivity returns.
+7. The member can immediately continue their activity instead of completing a full transaction form.
+
+The quick-capture step does **not** require wallet, transaction kind, category, or other enrichment merely because those fields are useful later.
 
 ## Transaction review
 
+Implemented in Issue #5:
+
 1. Member opens Transaction Inbox.
-2. Arta shows pending captured transactions with known context.
-3. Member reviews and adds/corrects details such as category or description.
-4. Member confirms the record.
-5. The transaction leaves the pending queue and becomes trusted for applicable reporting/budget calculations.
+2. Arta shows pending captures with amount, note when present, capture time, and known classification context.
+3. Member chooses **Review** and supplies the fields required for confirmation:
+   - transaction kind (`income` or `expense`)
+   - active wallet
+   - positive amount (editable from the captured amount)
+   - optional note
+4. Saving review keeps the item pending but makes it ready for confirmation.
+5. Member chooses **Confirm**.
+6. The server creates the confirmed financial transaction and marks the capture confirmed in one database transaction.
+7. The capture leaves the pending Inbox and the confirmed transaction becomes visible in financial history and eligible for wallet balance/reporting calculations.
+8. Repeating the confirm request for an already-confirmed capture returns the same linked transaction rather than creating a duplicate.
+
+### Trust boundary
+
+Pending captures are deliberately excluded from:
+
+- wallet balances
+- household income totals
+- household expense totals
+- future budget spending calculations
+
+Only confirmed transactions enter the trustworthy financial ledger.
 
 ## Wallet transfer
 
@@ -32,7 +58,7 @@ These are conceptual flows. UI details are intentionally not fixed yet.
 1. Household creates a budget for a defined period/scope.
 2. Confirmed eligible expenses are associated with that budget scope.
 3. Arta shows spent and remaining amounts.
-4. Transfers do not reduce the spending budget.
+4. Transfers and pending captures do not reduce the spending budget.
 
 ## Goal tracking
 
