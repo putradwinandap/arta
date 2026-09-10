@@ -2,8 +2,11 @@ import Dexie, { type EntityTable } from 'dexie';
 
 export type LocalCapture = {
   id: string;
-  createdAt: string;
-  syncStatus: 'pending' | 'synced' | 'failed';
+  householdId: string;
+  amountMinor: number;
+  note: string;
+  capturedAt: string;
+  syncStatus: 'pending' | 'failed';
 };
 
 class ArtaLocalDatabase extends Dexie {
@@ -13,6 +16,9 @@ class ArtaLocalDatabase extends Dexie {
     super('arta');
     this.version(1).stores({
       captures: 'id, createdAt, syncStatus'
+    });
+    this.version(2).stores({
+      captures: 'id, householdId, capturedAt, syncStatus'
     });
   }
 }
