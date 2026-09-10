@@ -6,7 +6,7 @@ Last updated: 2026-09-10
 
 **Planning-core implementation with vertical-slice delivery**
 
-Arta's engineering scaffold, household/wallet workflows, confirmed transaction/transfer core, and defining capture-first workflow are complete through Issue #5 / PR #17. A user can now capture an amount immediately, keep incomplete information safely pending, review/classify it later, and confirm it into the trustworthy financial ledger. The next execution target is Issue #6: MVP budgeting.
+Arta's engineering scaffold, household/wallet workflows, confirmed transaction/transfer core, capture-first workflow, and MVP budgeting are complete through Issue #6 / PR #18. A household can capture incomplete spending safely, confirm it into the trusted ledger, and track a household-wide per-currency spending budget for an explicit period.
 
 ## Established
 
@@ -18,6 +18,7 @@ Arta's engineering scaffold, household/wallet workflows, confirmed transaction/t
 - Core transaction principle: **Capture now, classify later.**
 - Transaction Inbox is implemented as the trust boundary between incomplete capture and confirmed finance.
 - Wallet transfers are explicit transfers, not income + expense.
+- MVP budgets are household-wide, per-currency spending limits over explicit inclusive date periods.
 - User-facing development follows the vertical-slice delivery rule in `AGENTS.md`.
 
 ## Implemented engineering foundation
@@ -40,7 +41,7 @@ Arta's engineering scaffold, household/wallet workflows, confirmed transaction/t
 
 ### Database
 - PostgreSQL 17
-- Goose SQL migrations through version 4
+- Goose SQL migrations through version 5
 - `sqlc` generation foundation
 - persistent Docker volume
 - real PostgreSQL integration tests
@@ -53,8 +54,8 @@ Arta's engineering scaffold, household/wallet workflows, confirmed transaction/t
 - Issue #12 / PR #15 completed household onboarding and wallet management UI.
 - Issue #4 / PR #16 completed confirmed transactions and wallet transfers.
 - Issue #5 / PR #17 completed Quick Capture and Transaction Inbox.
-- Issue #5 was verified by GitHub Actions run `34460805809`; web, server, and self-hosted E2E all passed before merge.
-- PR #17 was squash-merged as commit `25fba29d8a8630a9e0314f2f26b4b27ee8c4e6ff`.
+- Issue #6 / PR #18 completed MVP household spending budgets.
+- Issue #6 was verified by GitHub Actions run `34471190789`; web, server, and self-hosted E2E all passed before final source-of-truth updates.
 
 ## Implemented household and wallet behavior
 
@@ -95,7 +96,7 @@ Issue #5 makes Arta's defining product principle operational.
 - PostgreSQL `transaction_captures` stores pending capture state, provenance, classification fields, and its eventual confirmed transaction link.
 - Pending captures may intentionally lack wallet and transaction kind.
 - Inbox review can add an active household wallet, choose income/expense, and adjust amount/note.
-- Pending captures remain excluded from wallet balances, household income/expense totals, and future budget spending calculations.
+- Pending captures remain excluded from wallet balances, household income/expense totals, and budget spending calculations.
 
 ### Confirmation
 
@@ -104,31 +105,6 @@ Issue #5 makes Arta's defining product principle operational.
 - Repeated confirmation returns the same linked transaction instead of creating a duplicate.
 - Provenance remains available through capture source, capture timestamp, status, and capture-to-transaction link.
 
-Implemented flow:
-
-```text
-Quick Capture
-amount + optional note
-        |
-        v
-IndexedDB outbox
-        |
-        v
-server pending capture
-        |
-        v
-Transaction Inbox
-        |
-        v
-review wallet + income/expense
-        |
-        v
-atomic confirm
-        |
-        v
-trusted transaction ledger
-```
-
 Trust rule:
 
 ```text
@@ -136,6 +112,21 @@ pending capture != confirmed transaction
 pending capture -> no balance/reporting/budget effect
 confirmed transaction -> trusted financial calculations
 ```
+
+## Implemented MVP budgeting
+
+Issue #6 adds the first planning capability on top of the trusted ledger.
+
+- A budget belongs to one household and one currency over an explicit inclusive date period.
+- The spending limit uses integer minor units.
+- Only confirmed expenses in the same household, currency, and period contribute to `spent`.
+- Income, transfers, pending captures, out-of-period expenses, and cross-currency expenses do not consume budget.
+- `remaining = limit - spent` and may become negative after overspending.
+- Overlapping budgets for the same household and currency are rejected; different currencies remain independent.
+- Budget period boundaries currently use UTC calendar dates because household timezone is not yet modeled.
+- Category/envelope budgeting is deferred until transactions have trusted category semantics.
+- PostgreSQL persistence, Go domain/service behavior, REST endpoints, PWA creation/progress UI, integration tests, and self-hosted E2E coverage are implemented.
+- The durable decision is recorded in `docs/architecture/decisions/ADR-006-mvp-budget-model.md`.
 
 ## Accepted MVP implementation architecture
 
@@ -181,7 +172,6 @@ Docker Compose remains the first technical self-hosted path, not the final norma
 
 ## Still to decide / refine
 
-- Initial MVP budget scope/model
 - Detailed permissions model
 - Complete login/session/household invitation behavior
 - Detailed generalized sync endpoint contract and conflict rules
@@ -189,19 +179,20 @@ Docker Compose remains the first technical self-hosted path, not the final norma
 - Public demo hosting/deployment provider
 - Opening-balance and reconciliation semantics
 - Goal funding model
+- Household timezone semantics
+- Category model and future category/envelope budgeting
+- Database-level concurrency protection for overlapping budget creation
 - Automatic transaction capture implementation
 
 ## Current execution target
 
-Issue #6: **Design and implement MVP budgeting**.
-
-Before implementation, select the smallest durable budget scope/model. The implementation must count only eligible confirmed expenses, calculate remaining amount exactly, exclude transfers, and explicitly keep pending/untrusted captures outside budget spending.
+Issue #6 is complete pending merge of PR #18. Select the next roadmap Issue after merge rather than expanding the budget slice with unrelated scope.
 
 ## Next execution steps
 
-1. Resolve and document the MVP budget scope/model required by Issue #6.
-2. Implement budgeting as a complete vertical slice across PostgreSQL, Go, REST, React, automated tests, and self-hosted E2E.
-3. Reuse the established trust boundary: only eligible confirmed expenses consume budget; transfers and pending captures do not.
+1. Merge PR #18 after the final documentation-only CI run is green.
+2. Select the next coherent roadmap Issue and deliver it as a vertical slice.
+3. Preserve the established trust boundary: only confirmed financial records affect balances, reporting, and budgets.
 4. Keep exact integer monetary representation and all three CI lanes green.
-5. Resolve opening balance/reconciliation only through an explicit financial-domain decision when needed.
+5. Resolve opening balance/reconciliation and household timezone semantics only through explicit financial-domain decisions when needed.
 6. Defer generalized synchronization and automatic capture integrations until the current core remains trustworthy.
