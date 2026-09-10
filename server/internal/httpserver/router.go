@@ -45,12 +45,17 @@ func New(pool *pgxpool.Pool) http.Handler {
 			r.Patch("/{captureID}", h.reviewCapture)
 			r.Post("/{captureID}/confirm", h.confirmCapture)
 		})
+		r.Route("/{householdID}/reconciliations", func(r chi.Router) {
+			r.Get("/", h.listReconciliations)
+			r.Post("/{reconciliationID}/adjust", h.adjustReconciliation)
+		})
 		r.Route("/{householdID}/wallets", func(r chi.Router) {
 			r.Post("/", h.createWallet)
 			r.Get("/", h.listWallets)
 			r.Get("/{walletID}", h.getWallet)
 			r.Patch("/{walletID}", h.updateWallet)
 			r.Post("/{walletID}/archive", h.archiveWallet)
+			r.Post("/{walletID}/reconcile", h.createReconciliation)
 		})
 	})
 	return r

@@ -188,7 +188,8 @@ func (s *Service) WalletBalances(ctx context.Context, householdID uuid.UUID) ([]
 	rows, err := s.pool.Query(ctx, `
 SELECT w.id,
        COALESCE(SUM(CASE WHEN t.kind='income' THEN t.amount_minor WHEN t.kind='expense' THEN -t.amount_minor ELSE 0 END),0)
-       + COALESCE((SELECT SUM(CASE WHEN tr.destination_wallet_id=w.id THEN tr.amount_minor ELSE -tr.amount_minor END) FROM transfers tr WHERE tr.household_id=w.household_id AND (tr.source_wallet_id=w.id OR tr.destination_wallet_id=w.id)),0) AS balance,
+       + COALESCE((SELECT SUM(CASE WHEN tr.destination_wallet_id=w.id THEN tr.amount_minor ELSE -tr.amount_minor END) FROM transfers tr WHERE tr.household_id=w.household_id AND (tr.source_wallet_id=w.id OR tr.destination_wallet_id=w.id)),0)
+       + COALESCE((SELECT SUM(a.amount_minor) FROM balance_adjustments a WHERE a.household_id=w.household_id AND a.wallet_id=w.id),0) AS balance,
        w.currency
 FROM wallets w
 LEFT JOIN transactions t ON t.wallet_id=w.id AND t.household_id=w.household_id
