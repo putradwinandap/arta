@@ -1,0 +1,35 @@
+name: Finalize Issue 7
+on:
+  push:
+    branches: [issue-7-financial-goals]
+permissions:
+  contents: write
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+      - name: Wire wallet availability and goal errors
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('server/internal/finance/service.go')
+          s=p.read_text()
+          s=s.replace('AmountMinor int64     `json:"amountMinor"`\n\tCurrency    string    `json:"currency"`', 'AmountMinor    int64     `json:"amountMinor"`\n\tReservedMinor  int64     `json:"reservedMinor"`\n\tAvailableMinor int64     `json:"availableMinor"`\n\tCurrency       string    `json:"currency"`')
+          p.write_text(s)
+          p=Path('server/internal/httpserver/finance_handlers.go')
+          s=p.read_text().replace('h.service.WalletBalances(r.Context(), householdID)', 'h.service.WalletAvailableBalances(r.Context(), householdID)')
+          s=s.replace('finance.IsBudgetInputError(err) {', 'finance.IsBudgetInputError(err) ||\n\t\tfinance.IsGoalInputError(err) {')
+          p.write_text(s)
+          PY
+          gofmt -w server/internal/finance/service.go server/internal/httpserver/finance_handlers.go
+      - run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add server/internal
+          git commit -m "feat: expose reserved wallet availability" || exit 0
+          git push
