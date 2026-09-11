@@ -110,7 +110,31 @@ function Invoke-Update {
 
 function Invoke-Reset {
     Require-Runtime
-    Write-Host 'Arta: WARNING - reset permanently deletes the local PostgreSQL data volume and regenerates local credentials.'
+
+    $confirmationPhrase = 'DELETE ALL ARTA DATA'
+    Write-Host ''
+    Write-Host '============================================================' -ForegroundColor Red
+    Write-Host ' DANGER: DESTRUCTIVE ARTA RESET' -ForegroundColor Red
+    Write-Host '============================================================' -ForegroundColor Red
+    Write-Host 'This operation permanently deletes ALL local Arta PostgreSQL data.' -ForegroundColor Yellow
+    Write-Host 'This includes wallets, transactions, budgets, goals, household data,' -ForegroundColor Yellow
+    Write-Host 'and any other information stored in the local database.' -ForegroundColor Yellow
+    Write-Host ''
+    Write-Host 'The database volume will be removed and local credentials regenerated.' -ForegroundColor Yellow
+    Write-Host 'THIS CANNOT BE UNDONE.' -ForegroundColor Red
+    Write-Host 'If this installation contains anything important, stop now and back it up first.' -ForegroundColor Red
+    Write-Host ''
+    Write-Host "To continue, type this exact phrase:" -ForegroundColor Cyan
+    Write-Host "  $confirmationPhrase" -ForegroundColor White
+    Write-Host ''
+
+    $confirmation = Read-Host 'Confirmation'
+    if ($confirmation -cne $confirmationPhrase) {
+        Write-Host 'Arta: reset cancelled. No data was deleted.' -ForegroundColor Green
+        return
+    }
+
+    Write-Host 'Arta: destructive reset confirmed. Deleting local database volume...' -ForegroundColor Red
 
     $oldDbPassword = $env:ARTA_POSTGRES_PASSWORD
     $oldSessionSecret = $env:ARTA_SESSION_SECRET
