@@ -48,12 +48,8 @@ func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{pool: pool, now: time.Now}
 }
 
-func (s *Service) CreateHousehold(ctx context.Context, name string, ownerSubjectID uuid.UUID) (household.Household, error) {
+func (s *Service) CreateHousehold(ctx context.Context, name string, ownerUserID uuid.UUID) (household.Household, error) {
 	h, err := household.New(name)
-	if err != nil {
-		return household.Household{}, err
-	}
-	membership, err := household.NewMembership(h.ID, ownerSubjectID)
 	if err != nil {
 		return household.Household{}, err
 	}
@@ -67,7 +63,7 @@ func (s *Service) CreateHousehold(ctx context.Context, name string, ownerSubject
 	if _, err := tx.Exec(ctx, `INSERT INTO households (id, name) VALUES ($1, $2)`, h.ID, h.Name); err != nil {
 		return household.Household{}, err
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO household_members (id, household_id, subject_id) VALUES ($1, $2, $3)`, membership.ID, membership.HouseholdID, membership.SubjectID); err != nil {
+	if _, err := tx.Exec(ctx, `INSERT INTO household_members (id, household_id, subject_id, user_id, role) VALUES ($1, $2, $3, $4, 'owner')`, uuid.New(), h.ID, ownerUserID, ownerUserID); err != nil {
 		return household.Household{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -123,14 +119,8 @@ func (s *Service) UpdateWallet(ctx context.Context, householdID, walletID uuid.U
 	if err := w.Update(name, walletType); err != nil {
 		return wallet.Wallet{}, err
 	}
-	commandTag, err := s.pool.Exec(ctx, `UPDATE wallets SET name = $1, type = $2, updated_at = NOW() WHERE id = $3 AND household_id = $4 AND status = 'active'`, w.Name, w.Type, w.ID, w.HouseholdID)
-	if err != nil {
-		return wallet.Wallet{}, err
-	}
-	if commandTag.RowsAffected() != 1 {
-		return wallet.Wallet{}, pgx.ErrNoRows
-	}
-	return w, nil
+	_, err = s.pool.Exec(ctx, `UPDATE wallets SET name = $3, type = $4, updated_at = NOW() WHERE id = $1 AND household_id = $2`, walletID, householdID, w.Name, w.Type)
+	return w, err
 }
 
 func (s *Service) ArchiveWallet(ctx context.Context, householdID, walletID uuid.UUID) (wallet.Wallet, error) {
@@ -138,27 +128,60 @@ func (s *Service) ArchiveWallet(ctx context.Context, householdID, walletID uuid.
 	if err != nil {
 		return wallet.Wallet{}, err
 	}
-	if err := w.Archive(s.now()); err != nil {
+	if w.Status == wallet.StatusArchived {
+		return w, nil
+	}
+	if err := s.ensureWalletArchivable(ctx, householdID, walletID); err != nil {
 		return wallet.Wallet{}, err
 	}
-	_, err = s.pool.Exec(ctx, `UPDATE wallets SET status = 'archived', archived_at = $1, updated_at = NOW() WHERE id = $2 AND household_id = $3 AND status = 'active'`, w.ArchivedAt, w.ID, w.HouseholdID)
+	archivedAt := s.now().UTC()
+	if err := w.Archive(archivedAt); err != nil {
+		return wallet.Wallet{}, err
+	}
+	_, err = s.pool.Exec(ctx, `UPDATE wallets SET status = 'archived', archived_at = $3, updated_at = NOW() WHERE id = $1 AND household_id = $2`, walletID, householdID, archivedAt)
 	return w, err
 }
 
-func (s *Service) CreateTransaction(ctx context.Context, householdID, walletID uuid.UUID, kind ledger.Kind, amountMinor int64, occurredAt time.Time, note string) (ledger.Transaction, error) {
+func (s *Service) ensureWalletArchivable(ctx context.Context, householdID, walletID uuid.UUID) error {
+	var count int
+	if err := s.pool.QueryRow(ctx, `SELECT COUNT(*) FROM transactions WHERE household_id = $1 AND wallet_id = $2`, householdID, walletID).Scan(&count); err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("wallet with transactions cannot be archived")
+	}
+	if err := s.pool.QueryRow(ctx, `SELECT COUNT(*) FROM transfers WHERE household_id = $1 AND (source_wallet_id = $2 OR destination_wallet_id = $2)`, householdID, walletID).Scan(&count); err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("wallet with transfers cannot be archived")
+	}
+	return nil
+}
+
+func scanWallet(row pgx.Row) (wallet.Wallet, error) {
+	var w wallet.Wallet
+	err := row.Scan(&w.ID, &w.HouseholdID, &w.Name, &w.Type, &w.Currency, &w.Status, &w.ArchivedAt)
+	return w, err
+}
+
+func (s *Service) CreateTransaction(ctx context.Context, householdID, walletID uuid.UUID, transactionType ledger.TransactionType, amountMinor int64, currency string, occurredAt time.Time, note string) (ledger.Transaction, error) {
 	w, err := s.GetWallet(ctx, householdID, walletID)
 	if err != nil {
 		return ledger.Transaction{}, err
 	}
-	if w.Status == wallet.StatusArchived {
-		return ledger.Transaction{}, ledger.ErrArchivedWallet
+	if w.Status != wallet.StatusActive {
+		return ledger.Transaction{}, errors.New("wallet is archived")
 	}
-	tx, err := ledger.NewTransaction(householdID, walletID, kind, amountMinor, w.Currency, occurredAt, note)
+	transaction, err := ledger.NewTransaction(householdID, walletID, transactionType, amountMinor, currency, occurredAt, note)
 	if err != nil {
 		return ledger.Transaction{}, err
 	}
-	_, err = s.pool.Exec(ctx, `INSERT INTO transactions (id, household_id, wallet_id, kind, amount_minor, currency, occurred_at, note) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, tx.ID, tx.HouseholdID, tx.WalletID, tx.Kind, tx.AmountMinor, tx.Currency, tx.OccurredAt, tx.Note)
-	return tx, err
+	if transaction.Currency != w.Currency {
+		return ledger.Transaction{}, errors.New("transaction currency must match wallet currency")
+	}
+	_, err = s.pool.Exec(ctx, `INSERT INTO transactions (id, household_id, wallet_id, type, amount_minor, currency, occurred_at, note) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, transaction.ID, transaction.HouseholdID, transaction.WalletID, transaction.Type, transaction.AmountMinor, transaction.Currency, transaction.OccurredAt, transaction.Note)
+	return transaction, err
 }
 
 func (s *Service) CreateTransfer(ctx context.Context, householdID, sourceWalletID, destinationWalletID uuid.UUID, amountMinor int64, occurredAt time.Time, note string) (ledger.Transfer, error) {
@@ -170,11 +193,11 @@ func (s *Service) CreateTransfer(ctx context.Context, householdID, sourceWalletI
 	if err != nil {
 		return ledger.Transfer{}, err
 	}
-	if source.Status == wallet.StatusArchived || destination.Status == wallet.StatusArchived {
-		return ledger.Transfer{}, ledger.ErrArchivedWallet
+	if source.Status != wallet.StatusActive || destination.Status != wallet.StatusActive {
+		return ledger.Transfer{}, errors.New("transfer wallets must be active")
 	}
 	if source.Currency != destination.Currency {
-		return ledger.Transfer{}, ledger.ErrCurrencyMismatch
+		return ledger.Transfer{}, errors.New("transfer wallets must use the same currency")
 	}
 	transfer, err := ledger.NewTransfer(householdID, sourceWalletID, destinationWalletID, amountMinor, source.Currency, occurredAt, note)
 	if err != nil {
@@ -184,70 +207,50 @@ func (s *Service) CreateTransfer(ctx context.Context, householdID, sourceWalletI
 	return transfer, err
 }
 
-func (s *Service) WalletBalances(ctx context.Context, householdID uuid.UUID) ([]WalletBalance, error) {
-	rows, err := s.pool.Query(ctx, `
-SELECT w.id,
-       COALESCE(SUM(CASE WHEN t.kind='income' THEN t.amount_minor WHEN t.kind='expense' THEN -t.amount_minor ELSE 0 END),0)
-       + COALESCE((SELECT SUM(CASE WHEN tr.destination_wallet_id=w.id THEN tr.amount_minor ELSE -tr.amount_minor END) FROM transfers tr WHERE tr.household_id=w.household_id AND (tr.source_wallet_id=w.id OR tr.destination_wallet_id=w.id)),0)
-       + COALESCE((SELECT SUM(a.amount_minor) FROM balance_adjustments a WHERE a.household_id=w.household_id AND a.wallet_id=w.id),0) AS balance,
-       w.currency
-FROM wallets w
-LEFT JOIN transactions t ON t.wallet_id=w.id AND t.household_id=w.household_id
-WHERE w.household_id=$1
-GROUP BY w.id, w.currency, w.household_id
-ORDER BY w.created_at, w.id`, householdID)
+func (s *Service) GetWalletBalance(ctx context.Context, householdID, walletID uuid.UUID) (WalletBalance, error) {
+	w, err := s.GetWallet(ctx, householdID, walletID)
 	if err != nil {
-		return nil, err
+		return WalletBalance{}, err
 	}
-	defer rows.Close()
-	balances := make([]WalletBalance, 0)
-	for rows.Next() {
-		var b WalletBalance
-		if err := rows.Scan(&b.WalletID, &b.AmountMinor, &b.Currency); err != nil {
-			return nil, err
-		}
-		balances = append(balances, b)
+	var income, expense, incoming, outgoing, adjustments, reserved int64
+	if err := s.pool.QueryRow(ctx, `SELECT COALESCE(SUM(amount_minor) FILTER (WHERE type='income'),0), COALESCE(SUM(amount_minor) FILTER (WHERE type='expense'),0) FROM transactions WHERE household_id=$1 AND wallet_id=$2`, householdID, walletID).Scan(&income, &expense); err != nil {
+		return WalletBalance{}, err
 	}
-	return balances, rows.Err()
+	if err := s.pool.QueryRow(ctx, `SELECT COALESCE(SUM(amount_minor) FILTER (WHERE destination_wallet_id=$2),0), COALESCE(SUM(amount_minor) FILTER (WHERE source_wallet_id=$2),0) FROM transfers WHERE household_id=$1 AND (source_wallet_id=$2 OR destination_wallet_id=$2)`, householdID, walletID).Scan(&incoming, &outgoing); err != nil {
+		return WalletBalance{}, err
+	}
+	if err := s.pool.QueryRow(ctx, `SELECT COALESCE(SUM(amount_minor),0) FROM balance_adjustments WHERE household_id=$1 AND wallet_id=$2`, householdID, walletID).Scan(&adjustments); err != nil {
+		return WalletBalance{}, err
+	}
+	if err := s.pool.QueryRow(ctx, `SELECT COALESCE(SUM(amount_minor),0) FROM goal_reservation_events WHERE household_id=$1 AND wallet_id=$2`, householdID, walletID).Scan(&reserved); err != nil {
+		return WalletBalance{}, err
+	}
+	amount := income - expense + incoming - outgoing + adjustments
+	return WalletBalance{WalletID: walletID, AmountMinor: amount, ReservedMinor: reserved, AvailableMinor: amount - reserved, Currency: w.Currency}, nil
 }
 
-func (s *Service) HouseholdTotals(ctx context.Context, householdID uuid.UUID) (HouseholdTotals, error) {
+func (s *Service) GetHouseholdTotals(ctx context.Context, householdID uuid.UUID) (HouseholdTotals, error) {
 	var totals HouseholdTotals
-	err := s.pool.QueryRow(ctx, `SELECT COALESCE(SUM(amount_minor) FILTER (WHERE kind='income'),0), COALESCE(SUM(amount_minor) FILTER (WHERE kind='expense'),0) FROM transactions WHERE household_id=$1`, householdID).Scan(&totals.IncomeMinor, &totals.ExpenseMinor)
+	err := s.pool.QueryRow(ctx, `SELECT COALESCE(SUM(amount_minor) FILTER (WHERE type='income'),0), COALESCE(SUM(amount_minor) FILTER (WHERE type='expense'),0) FROM transactions WHERE household_id=$1`, householdID).Scan(&totals.IncomeMinor, &totals.ExpenseMinor)
 	return totals, err
 }
 
-func (s *Service) ListActivity(ctx context.Context, householdID uuid.UUID) ([]Activity, error) {
-	rows, err := s.pool.Query(ctx, `
-SELECT id, kind AS type, wallet_id, NULL::uuid, NULL::uuid, amount_minor, currency, occurred_at, note FROM transactions WHERE household_id=$1
-UNION ALL
-SELECT id, 'transfer' AS type, NULL::uuid, source_wallet_id, destination_wallet_id, amount_minor, currency, occurred_at, note FROM transfers WHERE household_id=$1
-ORDER BY occurred_at DESC, id DESC LIMIT 50`, householdID)
+func (s *Service) ListRecentActivity(ctx context.Context, householdID uuid.UUID, limit int) ([]Activity, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	rows, err := s.pool.Query(ctx, `SELECT id, type, wallet_id, NULL::uuid, NULL::uuid, amount_minor, currency, occurred_at, note FROM transactions WHERE household_id=$1 UNION ALL SELECT id, 'transfer', NULL::uuid, source_wallet_id, destination_wallet_id, amount_minor, currency, occurred_at, note FROM transfers WHERE household_id=$1 ORDER BY occurred_at DESC, id DESC LIMIT $2`, householdID, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := make([]Activity, 0)
+	activities := make([]Activity, 0)
 	for rows.Next() {
-		var item Activity
-		if err := rows.Scan(&item.ID, &item.Type, &item.WalletID, &item.SourceWalletID, &item.DestinationWalletID, &item.AmountMinor, &item.Currency, &item.OccurredAt, &item.Note); err != nil {
+		var a Activity
+		if err := rows.Scan(&a.ID, &a.Type, &a.WalletID, &a.SourceWalletID, &a.DestinationWalletID, &a.AmountMinor, &a.Currency, &a.OccurredAt, &a.Note); err != nil {
 			return nil, err
 		}
-		items = append(items, item)
+		activities = append(activities, a)
 	}
-	return items, rows.Err()
-}
-
-func IsLedgerInputError(err error) bool {
-	return errors.Is(err, ledger.ErrInvalidAmount) || errors.Is(err, ledger.ErrInvalidKind) || errors.Is(err, ledger.ErrInvalidWallet) || errors.Is(err, ledger.ErrInvalidHousehold) || errors.Is(err, ledger.ErrInvalidCurrency) || errors.Is(err, ledger.ErrSelfTransfer) || errors.Is(err, ledger.ErrCurrencyMismatch) || errors.Is(err, ledger.ErrArchivedWallet)
-}
-
-type rowScanner interface {
-	Scan(dest ...any) error
-}
-
-func scanWallet(row rowScanner) (wallet.Wallet, error) {
-	var w wallet.Wallet
-	err := row.Scan(&w.ID, &w.HouseholdID, &w.Name, &w.Type, &w.Currency, &w.Status, &w.ArchivedAt)
-	return w, err
+	return activities, rows.Err()
 }
