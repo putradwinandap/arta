@@ -4,9 +4,9 @@ Last updated: 2026-09-11
 
 ## Current phase
 
-**Planning and reliability capabilities delivered as vertical slices; MVP operability and data recovery are being hardened.**
+**Core financial, planning, reliability, operability, and household backup/restore capabilities are delivered as vertical slices; the next MVP gap is complete authentication and household authorization.**
 
-Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, and a supported self-hosted setup/start flow.
+Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, and a supported self-hosted setup/start flow.
 
 ## Established product and domain rules
 
@@ -21,6 +21,8 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Reconciliation compares observed physical balance with trusted ledger state; Arta never silently fabricates activity to hide a discrepancy.
 - Household overview/reporting is derived and does not persist duplicate financial truth.
 - Backup/restore is household-scoped, versioned, excludes runtime secrets, and MVP restore replaces rather than ambiguously merges household state.
+- Destructive local reset is fail-closed and requires explicit typed confirmation before persistent PostgreSQL data can be removed.
+- Browser-selected household state is a UI preference only; after the authentication slice is complete, authorization must be enforced server-side from authenticated household membership.
 - User-facing work follows the vertical-slice rule in `AGENTS.md`.
 
 ## Implemented product slices
@@ -35,6 +37,8 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Issue #8 / PR #23: wallet reconciliation foundation, squash-merged as `6d1b9bc34dcbf43f08fb92b3f030705457c6608e`.
 - Issue #20 / PR #25: household overview and basic reporting, merged as `10daf17d322079c28c54035c1a95059142fe35ac`.
 - Issue #21 / PR #26: supported local/self-hosted installer and startup flow, squash-merged as `20fadbe4988bf1a3c22682aa9d013f66782ff87f` after all CI lanes passed.
+- Issue #22: safe household backup and restore from the Arta interface, completed and closed.
+- Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`; latest verified `main` CI is green.
 
 ## Current engineering foundation
 
@@ -42,17 +46,20 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Server: Go modular monolith, `net/http` + `chi`, REST, `pgx`.
 - Database: PostgreSQL 17, Goose migrations, `sqlc` foundation, PostgreSQL integration tests.
 - Delivery: Docker Compose, supported POSIX/PowerShell launchers, and GitHub Actions web/server/self-hosted-E2E lanes.
-- Authentication: Argon2id/session foundation exists; complete login/invitation/authorization flows remain incomplete.
+- Data recovery: versioned household JSON backup/restore with explicit replace semantics and destructive confirmation.
+- Authentication: Argon2id/session foundation exists; complete registration/login/invitation/authorization product flows remain incomplete.
 
 ## Current execution target
 
-Issue #22 — **Add safe backup and restore from the Arta interface**.
+Issue #31 — **Complete MVP authentication and household authorization**.
 
-The MVP format is a versioned Arta JSON household snapshot. It preserves persisted household financial truth and audit history while excluding runtime secrets/configuration and transient browser retry state. Restore is explicit replace semantics, requires destructive confirmation, validates compatibility before mutation, and executes atomically in one PostgreSQL transaction. See `docs/product/backup-restore.md`.
+The target is the smallest complete authentication vertical slice: register/login -> authenticated server session -> create or join household -> server-verified household membership -> household-scoped financial workflows -> logout/session invalidation.
+
+`arta.householdId` may remain client-side active-household UI state, but it must never grant access by itself. Every household-scoped API must authorize the authenticated user against persisted household membership, and cross-household reads/writes must be rejected even when a client manually supplies another household ID.
 
 ## Still to decide / refine
 
-- Detailed permissions and complete authentication/invitation behavior, including who may perform restore.
+- Minimal invitation/join mechanics and the smallest useful owner/member permission model for MVP.
 - Generalized offline sync/conflict rules beyond capture outbox.
 - Distribution beyond a source checkout after the MVP path is validated.
 - Household timezone semantics.
@@ -64,7 +71,8 @@ The MVP format is a versioned Arta JSON household snapshot. It preserves persist
 
 ## Next execution steps
 
-1. Complete Issue #22 end-to-end with export/download and confirmed restore UI/API.
-2. Prove representative backup -> destructive change -> restore round-trip behavior in automated PostgreSQL-backed tests/E2E.
-3. Reject malformed, cross-household, and unsupported-version artifacts before destructive work.
-4. Keep secrets and unrelated server/runtime configuration outside household backup artifacts.
+1. Execute Issue #31 as an end-to-end authentication + household authorization vertical slice.
+2. Make server-side authenticated membership, not browser-controlled household identity, the authorization boundary for all household-scoped APIs.
+3. Add PostgreSQL-backed integration tests proving unauthenticated access and cross-household access are rejected without mutation.
+4. Connect registration/login, household onboarding/join, active-household selection, and logout to the PWA.
+5. Run canonical local guards before remote CI and update this state again when the slice materially changes the project.
