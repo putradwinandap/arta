@@ -50,6 +50,10 @@ jobs:
       - run: goose -dir db/migrations postgres "$ARTA_DATABASE_URL" up
       - run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
       - run: sqlc generate
+      - name: Run authentication and household security integration test
+        run: |
+          test -n "$ARTA_DATABASE_URL"
+          go test ./internal/httpserver -run '^TestAuthenticationAndHouseholdAuthorization$' -count=1 -v
       - name: Verify server formatting, tests, and build
         working-directory: .
         run: sh scripts/server-check.sh check
