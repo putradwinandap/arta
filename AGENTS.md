@@ -70,6 +70,23 @@ Before finishing work:
 6. Keep commits scoped and descriptive.
 7. Summarize what changed, verification performed, and any remaining risks or questions.
 
+## CI failure prevention rule
+
+**A CI failure is not complete when the current run turns green; it is complete when the same preventable failure is unlikely to reach remote CI again.**
+
+Whenever CI fails:
+
+1. Identify and record the root cause before treating the failure as resolved.
+2. Fix the immediate failure with the smallest coherent change.
+3. Determine whether the same failure can be detected locally before push or pull request creation.
+4. When practical, add or improve a local guard, canonical verification command, test, linter, formatter, validation script, hook, or shared CI/local command so the same class of failure is caught earlier.
+5. Update the appropriate repository documentation or engineering rule when the failure reveals durable workflow knowledge.
+6. Reuse the prevention mechanism in both local development and CI when practical, instead of maintaining duplicate checks that can drift.
+7. Do not repeatedly spend remote CI runs rediscovering the same deterministic failure. If an identical or equivalent failure recurs, treat the missing prevention as a workflow defect and address it before continuing unrelated work.
+8. Keep CI as the final enforcement layer even when a local guard exists; local prevention must not weaken remote verification.
+
+The goal is to protect limited CI quota, reduce low-value red builds, and make every CI failure improve the engineering system rather than becoming recurring operational noise.
+
 ## Vertical slice delivery rule
 
 For user-facing product work, vertical slices are the default delivery model.
