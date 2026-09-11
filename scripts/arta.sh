@@ -89,6 +89,38 @@ update() {
   printf 'Arta: updated and started. Existing PostgreSQL data was preserved and migrations ran automatically.\n'
 }
 
+reset() {
+  require_runtime
+  confirmation_phrase='DELETE ALL ARTA DATA'
+
+  printf '\n============================================================\n' >&2
+  printf ' DANGER: DESTRUCTIVE ARTA RESET\n' >&2
+  printf '============================================================\n' >&2
+  printf 'This operation permanently deletes ALL local Arta PostgreSQL data.\n' >&2
+  printf 'This includes wallets, transactions, budgets, goals, household data,\n' >&2
+  printf 'and any other information stored in the local database.\n\n' >&2
+  printf 'The database volume will be removed and local credentials regenerated.\n' >&2
+  printf 'THIS CANNOT BE UNDONE.\n' >&2
+  printf 'If this installation contains anything important, stop now and back it up first.\n\n' >&2
+  printf 'To continue, type this exact phrase:\n  %s\n\n' "$confirmation_phrase" >&2
+  printf 'Confirmation: ' >&2
+  IFS= read -r confirmation
+
+  if [ "$confirmation" != "$confirmation_phrase" ]; then
+    printf 'Arta: reset cancelled. No data was deleted.\n'
+    return
+  fi
+
+  printf 'Arta: destructive reset confirmed. Deleting local database volume...\n' >&2
+  cd "$ROOT_DIR"
+  ARTA_POSTGRES_PASSWORD="${ARTA_POSTGRES_PASSWORD:-arta-reset-placeholder}" \
+    ARTA_SESSION_SECRET="${ARTA_SESSION_SECRET:-arta-reset-placeholder}" \
+    docker compose down -v --remove-orphans || fail "Docker Compose could not reset Arta local data."
+  rm -f "$ENV_FILE"
+  ensure_env
+  printf 'Arta: local data reset complete. Run: sh scripts/arta.sh start\n'
+}
+
 usage() {
   cat <<'EOF'
 Usage: sh scripts/arta.sh <command>
@@ -99,6 +131,7 @@ Commands:
   stop    Stop Arta without deleting persistent data
   status  Show service status
   update  Fast-forward the checkout, rebuild, migrate, and restart
+  reset   Permanently delete local data and regenerate credentials (requires explicit confirmation)
 EOF
 }
 
@@ -108,5 +141,6 @@ case "${1:-}" in
   stop) stop ;;
   status) status ;;
   update) update ;;
+  reset) reset ;;
   *) usage; [ -z "${1:-}" ] || exit 2 ;;
 esac
