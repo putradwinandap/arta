@@ -23,6 +23,13 @@ Clone or download the Arta source checkout. From its root, run one launcher for 
 .\scripts\arta.ps1 start
 ```
 
+If Windows PowerShell blocks local script execution under the machine's execution policy, a one-process invocation can be used without changing the machine-wide policy:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\arta.ps1 setup
+powershell -ExecutionPolicy Bypass -File .\scripts\arta.ps1 start
+```
+
 ### macOS / Linux / other POSIX shell
 
 ```sh
@@ -31,6 +38,8 @@ sh scripts/arta.sh start
 ```
 
 `setup` checks Docker, checks Compose v2, checks that Docker is running, and creates `.env` with cryptographically generated PostgreSQL and session secrets. Re-running setup keeps the existing `.env` instead of replacing credentials.
+
+The Windows launcher supports Windows PowerShell 5.1-compatible cryptographic secret generation as well as newer PowerShell runtimes.
 
 `start` builds the application, starts PostgreSQL, runs all pending database migrations, starts the API, and serves the Arta web application. Open `http://localhost:8080` unless `ARTA_HTTP_PORT` was changed in `.env`.
 
@@ -70,7 +79,7 @@ sh scripts/arta.sh update
 
 The update command refuses to proceed with a dirty Git working tree, performs a fast-forward-only pull, keeps the existing `.env` and PostgreSQL volume, rebuilds containers, runs pending migrations, and restarts Arta.
 
-If Arta was installed from a downloaded archive rather than Git, replace the application checkout with the desired version while preserving `.env`, then run `start`. Back up important data before upgrades; the UI backup/restore workflow is tracked separately in Issue #22.
+If Arta was installed from a downloaded archive rather than Git, replace the application checkout with the desired version while preserving `.env`, then run `start`. Back up important data before upgrades. Arta also provides a household-scoped backup/restore workflow through its interface for supported persisted household data.
 
 ## Configuration
 
@@ -88,9 +97,33 @@ If port 8080 is already used, change `ARTA_HTTP_PORT` before starting Arta.
 
 ## Recovery and destructive operations
 
-The installer/launcher never removes the PostgreSQL volume. Ordinary `setup`, `start`, `stop`, and `update` are designed to preserve existing data.
+Ordinary `setup`, `start`, `stop`, and `update` preserve the PostgreSQL volume and existing data.
 
-Deleting `.env` does not delete the database, but generating a new database password while an existing PostgreSQL volume remains can make the existing database inaccessible to the new configuration. Preserve `.env` together with the deployment until a first-class backup/restore workflow is available.
+Deleting `.env` does not delete the database, but generating a new database password while an existing PostgreSQL volume remains can make that database inaccessible to the new configuration because PostgreSQL initializes the configured password when the volume is first created.
+
+If a disposable/local installation is intentionally being reset and **all local Arta PostgreSQL data may be permanently deleted**, use the guarded `reset` command instead of manually deleting volumes.
+
+Windows:
+
+```powershell
+.\scripts\arta.ps1 reset
+```
+
+POSIX:
+
+```sh
+sh scripts/arta.sh reset
+```
+
+`reset` is deliberately fail-closed. Before any persistent volume is removed, it displays a destructive-data warning and requires the exact, case-sensitive phrase:
+
+```text
+DELETE ALL ARTA DATA
+```
+
+Any mismatch cancels the reset without deleting data. A confirmed reset removes the local PostgreSQL volume, regenerates local credentials, and cannot be undone. If the installation contains important financial records, create and retain a verified backup before using reset.
+
+Do not substitute `docker compose down -v` for normal Arta lifecycle commands; it bypasses Arta's explicit destructive confirmation guard.
 
 ## Smoke verification
 
