@@ -1,8 +1,19 @@
 import { expect, test } from '@playwright/test';
 
-test('captures, budgets, reviews, and keeps confirmed finance trustworthy', async ({ page }) => {
-  const householdName = `Keluarga E2E ${Date.now()}`;
+test('registers, captures, budgets, reviews, and keeps confirmed finance trustworthy', async ({ page }) => {
+  const suffix = Date.now();
+  const householdName = `Keluarga E2E ${suffix}`;
+  const email = `e2e-${suffix}@example.test`;
+
   await page.goto('/');
+  await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
+  await page.getByRole('button', { name: /need an account.*register/i }).click();
+  await expect(page.getByRole('heading', { name: /create your arta account/i })).toBeVisible();
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill('correct horse battery staple');
+  await page.getByRole('button', { name: /create account/i }).click();
+  await expect(page.getByText(new RegExp(`Signed in as ${email}`, 'i'))).toBeVisible();
+
   await expect(page.getByRole('heading', { name: /start your family finance space/i })).toBeVisible();
   await page.getByLabel(/household name/i).fill(householdName);
   await page.getByRole('button', { name: /create household/i }).click();
@@ -79,4 +90,7 @@ test('captures, budgets, reviews, and keeps confirmed finance trustworthy', asyn
   await expect(page.locator('article.budget-card')).toContainText('275.000');
   await expect(page.locator('article.activity-row').filter({ hasText: 'Coffee' })).toBeVisible();
   await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
+
+  await page.getByRole('button', { name: /log out/i }).click();
+  await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
 });
