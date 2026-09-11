@@ -66,9 +66,10 @@ Before finishing work:
 2. Verify acceptance criteria from the Issue.
 3. Update documentation when behavior, architecture, or accepted product knowledge changed.
 4. Update `docs/context/current-state.md` when the project state materially changed.
-5. Add an ADR when making a durable architectural or domain decision with meaningful trade-offs.
-6. Keep commits scoped and descriptive.
-7. Summarize what changed, verification performed, and any remaining risks or questions.
+5. Reconcile `docs/context/current-state.md` against `docs/planning/roadmap.md`, `docs/planning/mvp.md`, and relevant open/closed Issues whenever a major slice completes or the next execution target changes. Explicitly identify required capabilities as Done, Partial, or Missing rather than allowing earlier-phase debt to disappear behind later slices.
+6. Add an ADR when making a durable architectural or domain decision with meaningful trade-offs.
+7. Keep commits scoped and descriptive.
+8. Summarize what changed, verification performed, and any remaining risks or questions.
 
 ## CI failure prevention rule
 
