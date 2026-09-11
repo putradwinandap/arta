@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+root="$(git rev-parse --show-toplevel)"
+
+if git diff --cached --name-only --diff-filter=ACMR | grep -qE '^server/.*\.go$'; then
+  echo "Go changes detected; formatting and verifying server before commit..."
+  sh "$root/scripts/server-check.sh" fix
+  git add -- "$root/server"
+fi

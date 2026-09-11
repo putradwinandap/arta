@@ -77,12 +77,31 @@ goose -dir db/migrations postgres "$ARTA_DATABASE_URL" up
 
 ## Verification
 
+For every Go/server change, the canonical local command is:
+
+```bash
+make server-check
+```
+
+It runs `gofmt -w` first, then the server test suite and build. Run it before committing or updating a pull request. CI calls the same script in check-only mode, so bypassing the local formatter still fails remotely instead of weakening enforcement.
+
+Frontend verification remains:
+
 ```bash
 npm run typecheck:web
 npm run test:web
 npm run build:web
-cd server && go mod tidy && sqlc generate && go test ./... && go build ./cmd/arta
 ```
+
+### Optional automatic Git guard
+
+Contributors who want formatting to happen automatically when committing staged Go changes can enable the repository hook once:
+
+```bash
+git config core.hooksPath scripts/git-hooks
+```
+
+The hook runs the canonical server check when staged `server/*.go` changes are present and re-stages any formatting fixes. This is optional; `make server-check` remains the documented source of truth and CI remains the final safety net.
 
 Playwright can be run after starting the Vite app:
 

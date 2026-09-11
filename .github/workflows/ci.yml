@@ -50,9 +50,9 @@ jobs:
       - run: goose -dir db/migrations postgres "$ARTA_DATABASE_URL" up
       - run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
       - run: sqlc generate
-      - run: test -z "$(gofmt -l .)"
-      - run: go test ./...
-      - run: go build ./cmd/arta
+      - name: Verify server formatting, tests, and build
+        working-directory: .
+        run: sh scripts/server-check.sh check
 
   self-hosted-e2e:
     runs-on: ubuntu-latest

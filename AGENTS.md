@@ -62,7 +62,7 @@ During work:
 
 Before finishing work:
 
-1. Run relevant tests, linters, type checks, and builds when available.
+1. Run relevant tests, linters, type checks, and builds when available. For any Go/server change, run the canonical `make server-check` from the repository root before committing or updating a PR. It applies `gofmt` automatically, then tests and builds the server.
 2. Verify acceptance criteria from the Issue.
 3. Update documentation when behavior, architecture, or accepted product knowledge changed.
 4. Update `docs/context/current-state.md` when the project state materially changed.

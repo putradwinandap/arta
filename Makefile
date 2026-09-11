@@ -1,4 +1,4 @@
-.PHONY: dev-up dev-down web-install web-dev web-test web-build server-test server-build generate migrate-up
+.PHONY: dev-up dev-down web-install web-dev web-test web-build server-format server-check server-ci server-test server-build generate migrate-up
 
 dev-up:
 	docker compose up --build
@@ -17,6 +17,15 @@ web-test:
 
 web-build:
 	npm run build:web
+
+server-format:
+	sh scripts/server-check.sh fix
+
+server-check:
+	sh scripts/server-check.sh fix
+
+server-ci:
+	sh scripts/server-check.sh check
 
 server-test:
 	cd server && go test ./...
