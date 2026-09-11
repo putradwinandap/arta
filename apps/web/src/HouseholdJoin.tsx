@@ -14,7 +14,7 @@ export function HouseholdJoin() {
     setJoining(true);
     setError('');
     try {
-      const response = await fetch('/api/household-invites/redeem', {
+      const response = await fetch('/api/invites/redeem', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
