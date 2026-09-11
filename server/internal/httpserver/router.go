@@ -24,12 +24,14 @@ func New(pool *pgxpool.Pool) http.Handler {
 
 	authService := auth.NewService(pool)
 	ah := authHandlers{service: authService}
+	ih := inviteHandlers{service: authService}
 	r.Post("/api/auth/register", ah.register)
 	r.Post("/api/auth/login", ah.login)
 	r.Group(func(r chi.Router) {
 		r.Use(requireAuthentication(authService))
 		r.Get("/api/auth/me", ah.me)
 		r.Post("/api/auth/logout", ah.logout)
+		r.Post("/api/invites/redeem", ih.redeem)
 	})
 
 	h := financeHandlers{service: finance.NewService(pool)}
@@ -40,6 +42,7 @@ func New(pool *pgxpool.Pool) http.Handler {
 		r.Route("/{householdID}", func(r chi.Router) {
 			r.Use(requireHouseholdMembership(authService))
 			r.Get("/", h.getHousehold)
+			r.Post("/invites", ih.create)
 			r.Get("/finance", h.getFinanceOverview)
 			r.Get("/backup", bh.exportHousehold)
 			r.Post("/restore", bh.restoreHousehold)
