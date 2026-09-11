@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('setup', 'start', 'stop', 'status', 'update')]
+    [ValidateSet('setup', 'start', 'stop', 'status', 'update', 'reset')]
     [string]$Command = 'setup'
 )
 
@@ -108,10 +108,40 @@ function Invoke-Update {
     Write-Host 'Arta: updated and started. Existing PostgreSQL data was preserved and migrations ran automatically.'
 }
 
+function Invoke-Reset {
+    Require-Runtime
+    Write-Host 'Arta: WARNING - reset permanently deletes the local PostgreSQL data volume and regenerates local credentials.'
+
+    $oldDbPassword = $env:ARTA_POSTGRES_PASSWORD
+    $oldSessionSecret = $env:ARTA_SESSION_SECRET
+    $hadDbPassword = Test-Path Env:ARTA_POSTGRES_PASSWORD
+    $hadSessionSecret = Test-Path Env:ARTA_SESSION_SECRET
+
+    Push-Location $Root
+    try {
+        # Placeholder values let Compose resolve required variables even when .env is missing.
+        $env:ARTA_POSTGRES_PASSWORD = 'arta-reset-placeholder'
+        $env:ARTA_SESSION_SECRET = 'arta-reset-placeholder'
+        docker compose down -v --remove-orphans
+        if ($LASTEXITCODE -ne 0) { Fail 'Docker Compose could not reset Arta local data.' }
+    } finally {
+        Pop-Location
+        if ($hadDbPassword) { $env:ARTA_POSTGRES_PASSWORD = $oldDbPassword } else { Remove-Item Env:ARTA_POSTGRES_PASSWORD -ErrorAction SilentlyContinue }
+        if ($hadSessionSecret) { $env:ARTA_SESSION_SECRET = $oldSessionSecret } else { Remove-Item Env:ARTA_SESSION_SECRET -ErrorAction SilentlyContinue }
+    }
+
+    if (Test-Path $EnvFile) {
+        Remove-Item $EnvFile -Force
+    }
+    Ensure-Env
+    Write-Host 'Arta: local data reset complete. Run: .\scripts\arta.ps1 start'
+}
+
 switch ($Command) {
     'setup' { Invoke-Setup }
     'start' { Invoke-Start }
     'stop' { Invoke-Stop }
     'status' { Invoke-Status }
     'update' { Invoke-Update }
+    'reset' { Invoke-Reset }
 }
