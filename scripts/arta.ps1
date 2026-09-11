@@ -25,8 +25,13 @@ function Require-Runtime {
 
 function New-Hex([int]$Bytes) {
     $buffer = New-Object byte[] $Bytes
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($buffer)
-    return ([Convert]::ToHexString($buffer)).ToLowerInvariant()
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $rng.GetBytes($buffer)
+    } finally {
+        $rng.Dispose()
+    }
+    return (($buffer | ForEach-Object { $_.ToString('x2') }) -join '')
 }
 
 function Ensure-Env {
