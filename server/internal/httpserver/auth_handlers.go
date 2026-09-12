@@ -56,6 +56,20 @@ func (h authHandlers) me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, user)
 }
 
+func (h authHandlers) households(w http.ResponseWriter, r *http.Request) {
+	user, ok := authenticatedUser(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthenticated")
+		return
+	}
+	memberships, err := h.service.ListHouseholds(r.Context(), user.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"households": memberships})
+}
+
 func (h authHandlers) logout(w http.ResponseWriter, r *http.Request) {
 	token := sessionToken(r)
 	if err := h.service.Logout(r.Context(), token); err != nil {

@@ -26,18 +26,19 @@ type User struct {
 	Email string    `json:"email"`
 }
 
+type HouseholdMembership struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Role string    `json:"role"`
+}
+
 type Service struct {
 	pool *pgxpool.Pool
 	now  func() time.Time
 }
 
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{pool: pool, now: time.Now}
-}
-
-func NormalizeEmail(email string) string {
-	return strings.ToLower(strings.TrimSpace(email))
-}
+func NewService(pool *pgxpool.Pool) *Service { return &Service{pool: pool, now: time.Now} }
+func NormalizeEmail(email string) string     { return strings.ToLower(strings.TrimSpace(email)) }
 
 func (s *Service) Register(ctx context.Context, email, password string) (User, string, time.Time, error) {
 	email = NormalizeEmail(email)
@@ -48,14 +49,12 @@ func (s *Service) Register(ctx context.Context, email, password string) (User, s
 	if err != nil {
 		return User{}, "", time.Time{}, err
 	}
-
 	user := User{ID: uuid.New(), Email: email}
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return User{}, "", time.Time{}, err
 	}
 	defer tx.Rollback(ctx)
-
 	if _, err := tx.Exec(ctx, `INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)`, user.ID, user.Email, passwordHash); err != nil {
 		var existing uuid.UUID
 		if lookupErr := tx.QueryRow(ctx, `SELECT id FROM users WHERE email = $1`, email).Scan(&existing); lookupErr == nil {
@@ -63,7 +62,6 @@ func (s *Service) Register(ctx context.Context, email, password string) (User, s
 		}
 		return User{}, "", time.Time{}, err
 	}
-
 	token, expiresAt, err := createSession(ctx, tx, user.ID, s.now())
 	if err != nil {
 		return User{}, "", time.Time{}, err
@@ -87,7 +85,6 @@ func (s *Service) Login(ctx context.Context, email, password string) (User, stri
 	if !VerifyPassword(password, passwordHash) {
 		return User{}, "", time.Time{}, ErrInvalidCredentials
 	}
-
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return User{}, "", time.Time{}, err
@@ -109,12 +106,7 @@ func (s *Service) UserForToken(ctx context.Context, token string) (User, error) 
 	}
 	hash := tokenHash(token)
 	var user User
-	err := s.pool.QueryRow(ctx, `
-		SELECT u.id, u.email
-		FROM user_sessions s
-		JOIN users u ON u.id = s.user_id
-		WHERE s.token_hash = $1 AND s.expires_at > $2
-	`, hash[:], s.now()).Scan(&user.ID, &user.Email)
+	err := s.pool.QueryRow(ctx, `SELECT u.id, u.email FROM user_sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > $2`, hash[:], s.now()).Scan(&user.ID, &user.Email)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrUnauthenticated
 	}
@@ -128,6 +120,23 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 	hash := tokenHash(token)
 	_, err := s.pool.Exec(ctx, `DELETE FROM user_sessions WHERE token_hash = $1`, hash[:])
 	return err
+}
+
+func (s *Service) ListHouseholds(ctx context.Context, userID uuid.UUID) ([]HouseholdMembership, error) {
+	rows, err := s.pool.Query(ctx, `SELECT h.id, h.name, hm.role FROM household_members hm JOIN households h ON h.id = hm.household_id WHERE hm.user_id = $1 ORDER BY h.created_at, h.id`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	memberships := make([]HouseholdMembership, 0)
+	for rows.Next() {
+		var membership HouseholdMembership
+		if err := rows.Scan(&membership.ID, &membership.Name, &membership.Role); err != nil {
+			return nil, err
+		}
+		memberships = append(memberships, membership)
+	}
+	return memberships, rows.Err()
 }
 
 func (s *Service) IsHouseholdMember(ctx context.Context, userID, householdID uuid.UUID) (bool, error) {
@@ -150,6 +159,4 @@ func createSession(ctx context.Context, tx pgx.Tx, userID uuid.UUID, now time.Ti
 	return token, expiresAt, nil
 }
 
-func tokenHash(token string) [sha256.Size]byte {
-	return sha256.Sum256([]byte(token))
-}
+func tokenHash(token string) [sha256.Size]byte { return sha256.Sum256([]byte(token)) }

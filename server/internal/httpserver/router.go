@@ -13,7 +13,9 @@ import (
 
 func New(pool *pgxpool.Pool) http.Handler {
 	r := chi.NewRouter()
-	r.Get("/api/health", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]string{"status": "ok"}) })
+	r.Get("/api/health", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, 200, map[string]string{"status": "ok"})
+	})
 	r.Get("/api/ready", func(w http.ResponseWriter, req *http.Request) {
 		if pool.Ping(req.Context()) != nil {
 			writeJSON(w, 503, map[string]string{"status": "not_ready"})
@@ -30,6 +32,7 @@ func New(pool *pgxpool.Pool) http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(requireAuthentication(authService))
 		r.Get("/api/auth/me", ah.me)
+		r.Get("/api/auth/households", ah.households)
 		r.Post("/api/auth/logout", ah.logout)
 		r.Post("/api/invites/redeem", ih.redeem)
 	})
