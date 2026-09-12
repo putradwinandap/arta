@@ -4,9 +4,9 @@ Last updated: 2026-09-12
 
 ## Current phase
 
-**Arta is in the authentication, household UX, navigation, and dashboard stabilization phase tracked by Issue #33. Issue #34 is landing the server-authoritative household bootstrap; Issue #35 is the next vertical slice.**
+**Arta is in the authentication, household UX, navigation, and dashboard stabilization phase tracked by Issue #33. Issue #34 is complete and Issue #35 / PR #42 is the active vertical slice, with Issue #36 next.**
 
-Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, authenticated household authorization, and server-backed household discovery after login.
+Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, authenticated household authorization, server-backed household discovery after login, and a unified household entry/selection/switching experience under final validation.
 
 Issue #9 (Android notification-based transaction capture research) is intentionally postponed until the stabilization umbrella is complete enough to resume product expansion safely.
 
@@ -25,9 +25,10 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 - Backup/restore is household-scoped, versioned, excludes runtime secrets, and MVP restore replaces rather than ambiguously merges household state.
 - Destructive local reset is fail-closed and requires explicit typed confirmation before persistent PostgreSQL data can be removed.
 - Browser-selected household state is a UI preference only. Household discovery and authorization come from the authenticated user's persisted server-side memberships.
+- Switching household must update every household-scoped UI surface; no mount may remain pinned to stale browser state from a previous household.
 - CI security coverage must execute against PostgreSQL rather than silently skipping database-backed authorization assertions.
 - Deterministic formatting, typecheck, web-test, and web-build failures are checked in the cheap CI preflight before expensive PostgreSQL integration and self-hosted E2E jobs.
-- When a CI failure exposes a repeatable local or fixture problem, add a preventive guard/fixture fix before relying on another remote run.
+- When a CI failure exposes a repeatable local, fixture, or UX-contract problem, identify the root cause and add/update a preventive guard before relying on another remote run. Do not repeatedly burn CI quota on the same known failure.
 - User-facing work follows the vertical-slice rule in `AGENTS.md`.
 
 ## Implemented product slices
@@ -44,7 +45,8 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 - Issue #21 / PR #26: supported local/self-hosted installer and startup flow, squash-merged as `20fadbe4988bf1a3c22682aa9d013f66782ff87f` after all CI lanes passed.
 - Issue #22: safe household backup and restore from the Arta interface, completed and closed.
 - Issue #31 / PR #32: MVP authentication and household authorization, squash-merged as `234338242874d16a0f90f2ef22efb11fb9d29582` after all CI lanes passed.
-- Issue #34 / PR #41: server-authoritative fresh-browser household bootstrap, including authenticated membership discovery, safe stale-local-selection fallback, bootstrap regression coverage, and CI fail-fast hardening; pending final merge after the post-documentation CI run is green.
+- Issue #34 / PR #41: server-authoritative fresh-browser household bootstrap, authenticated membership discovery, safe stale-local-selection fallback, bootstrap regression coverage, and CI fail-fast hardening; squash-merged as `80576ddb9f5c4f2855fea3a164dcc29f5769a684` after CI #147 passed.
+- Issue #35 / PR #42: unified zero-household Create/Join entry, membership refresh after create/join, multi-household selection/switching, and household management access for existing users; implementation is under final CI validation before merge.
 - Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`.
 
 ## Current engineering foundation
@@ -55,13 +57,21 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 - Delivery: Docker Compose, supported POSIX/PowerShell launchers, and GitHub Actions with a cheap deterministic preflight before PostgreSQL server integration and self-hosted E2E lanes.
 - Data recovery: versioned household JSON backup/restore with explicit replace semantics and destructive confirmation.
 - Authentication: persisted users with Argon2id password hashes, server-side hashed sessions, register/login/me/logout, authenticated household ownership, authenticated membership discovery, owner-created single-use invites, member join, and server-enforced household membership on household-scoped routes.
+- Household UX: zero-membership users receive one Create/Join entry surface; valid server memberships control activation; one membership is selected automatically; multiple memberships can be switched; create/join remains available through household management.
 - Security regression coverage: PostgreSQL-backed tests prove cross-household reads/writes are rejected, forbidden writes do not mutate finance state, invite replay is rejected, and logout invalidates the old session. CI has an explicit security integration step so these assertions cannot silently disappear behind an unset database URL.
+
+## CI lessons captured during Issue #35
+
+- CI #149 and #150 failed in self-hosted E2E because the onboarding assertion still described an older UX contract. Unit tests were green, so changing selector text without checking the actual rendered `HouseholdEntry` contract caused a second avoidable remote failure.
+- The regression guard now asserts the real accessible contract: the `Choose how to get started` heading, active Create Household tab, and visible Join Family tab.
+- Before rerunning a failed E2E caused by a UI contract change, inspect the rendered component/source and align the test with stable semantic roles instead of guessing replacement copy.
+- Final inspection of Issue #35 also found household-scoped mounts that could remain stale after an in-tab household switch. Budget and Backup/Restore mounts are being aligned with the active household before merge; existing Overview, Goals, and Reconciliation mounts already observe household changes.
 
 ## Current execution target
 
 Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture**.
 
-The active slice is Issue #34 / PR #41. Once it is merged, the next implementation target is Issue #35 — **Unify household onboarding, selection, and switching UX**.
+The active slice is Issue #35 / PR #42 — **Unify household onboarding, selection, and switching UX**. Issue #34 is complete. After #35 passes final CI and merges, the next implementation target is Issue #36 — **Add owner household invitation management UI**.
 
 Issue #9 remains postponed while this stabilization sequence is active.
 
@@ -79,7 +89,7 @@ Issue #9 remains postponed while this stabilization sequence is active.
 
 ## Next execution steps
 
-1. Finish Issue #34 / PR #41 only after the final CI run is fully green, then squash-merge it and confirm Issue #34 closes.
-2. Execute Issue #35 as the next focused vertical slice: unify zero-household onboarding, existing-household selection, and household switching without weakening server-authoritative membership.
-3. Continue the Issue #33 stabilization sequence with owner invitation management, responsive app shell/session controls, dedicated financial workflow pages, dashboard redesign, and the final responsive/accessibility/UX pass.
+1. Finish final CI validation for Issue #35 / PR #42, then squash-merge it and confirm Issue #35 closes.
+2. Execute Issue #36: expose owner invitation creation/view/copy management in the household UI while preserving server-enforced owner authorization.
+3. Continue the Issue #33 stabilization sequence with responsive app shell/session controls, dedicated financial workflow pages, dashboard redesign, and the final responsive/accessibility/UX pass.
 4. Resume Issue #9 only after the stabilization umbrella is sufficiently complete and the source of truth explicitly advances the execution target.
