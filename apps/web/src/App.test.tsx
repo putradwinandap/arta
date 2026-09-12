@@ -27,7 +27,7 @@ describe('App household wallet finance and capture slice', () => {
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const path = String(input);
-        if (path.endsWith('/api/auth/households')) {
+        if (path === '/api/auth/households') {
           return { ok: true, json: async () => ({ households: [] }) } as Response;
         }
         throw new Error(`unexpected fetch ${path}`);
@@ -42,11 +42,11 @@ describe('App household wallet finance and capture slice', () => {
   it('creates a household and exposes quick capture immediately', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const path = String(input);
-      if (path.endsWith('/api/auth/households')) return { ok: true, json: async () => ({ households: [] }) } as Response;
+      if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: [] }) } as Response;
+      if (path === '/api/households/') return { ok: true, json: async () => household } as Response;
       if (path.endsWith('/captures/')) return { ok: true, json: async () => ({ captures: [] }) } as Response;
       if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [] }) } as Response;
       if (path.endsWith('/finance')) return { ok: true, json: async () => emptyOverview } as Response;
-      if (path.endsWith('/api/households')) return { ok: true, json: async () => household } as Response;
       throw new Error(`unexpected fetch ${path}`);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -69,7 +69,7 @@ describe('App household wallet finance and capture slice', () => {
     };
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const path = String(input);
-      if (path.endsWith('/api/auth/households')) return { ok: true, json: async () => ({ households: [membership] }) } as Response;
+      if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: [membership] }) } as Response;
       if (path.endsWith(`/households/${household.id}`)) return { ok: true, json: async () => household } as Response;
       if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [wallet] }) } as Response;
       if (path.endsWith('/finance')) return { ok: true, json: async () => overview } as Response;
@@ -90,7 +90,7 @@ describe('App household wallet finance and capture slice', () => {
     localStorage.setItem('arta.householdId', household.id);
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const path = String(input);
-      if (path.endsWith('/api/auth/households')) return { ok: true, json: async () => ({ households: [membership] }) } as Response;
+      if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: [membership] }) } as Response;
       if (path.endsWith(`/households/${household.id}`)) return { ok: true, json: async () => household } as Response;
       if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [] }) } as Response;
       if (path.endsWith('/finance')) return { ok: true, json: async () => emptyOverview } as Response;
