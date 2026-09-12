@@ -9,16 +9,18 @@ export function BudgetMount() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
 
   useEffect(() => {
-    if (householdId) return;
     const timer = window.setInterval(() => {
-      const stored = localStorage.getItem(HOUSEHOLD_STORAGE_KEY);
-      if (stored) setHouseholdId(stored);
+      const next = localStorage.getItem(HOUSEHOLD_STORAGE_KEY) ?? '';
+      setHouseholdId((current) => current === next ? current : next);
     }, 500);
     return () => window.clearInterval(timer);
-  }, [householdId]);
+  }, []);
 
   useEffect(() => {
-    if (!householdId) return;
+    if (!householdId) {
+      setWallets([]);
+      return;
+    }
     void listWallets(householdId).then(setWallets).catch(() => setWallets([]));
   }, [householdId]);
 
