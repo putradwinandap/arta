@@ -14,7 +14,8 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await page.getByRole('button', { name: /create account/i }).click();
   await expect(page.getByText(new RegExp(`Signed in as ${email}`, 'i'))).toBeVisible();
 
-  await expect(page.getByRole('heading', { name: /start your family finance space/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /set up your family finance space/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /join family/i })).toBeVisible();
   await page.getByLabel(/household name/i).fill(householdName);
   await page.getByRole('button', { name: /create household/i }).click();
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
