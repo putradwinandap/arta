@@ -4,9 +4,11 @@ Last updated: 2026-09-12
 
 ## Current phase
 
-**The MVP foundation now includes authenticated household authorization; the next open product investigation is Android notification-based transaction capture.**
+**Arta is in the authentication, household UX, navigation, and dashboard stabilization phase tracked by Issue #33. Issue #34 is landing the server-authoritative household bootstrap; Issue #35 is the next vertical slice.**
 
-Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, and an authenticated household boundary.
+Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, authenticated household authorization, and server-backed household discovery after login.
+
+Issue #9 (Android notification-based transaction capture research) is intentionally postponed until the stabilization umbrella is complete enough to resume product expansion safely.
 
 ## Established product and domain rules
 
@@ -22,8 +24,9 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Household overview/reporting is derived and does not persist duplicate financial truth.
 - Backup/restore is household-scoped, versioned, excludes runtime secrets, and MVP restore replaces rather than ambiguously merges household state.
 - Destructive local reset is fail-closed and requires explicit typed confirmation before persistent PostgreSQL data can be removed.
-- Browser-selected household state is a UI preference only. Authorization is enforced server-side from the authenticated user's persisted household membership.
+- Browser-selected household state is a UI preference only. Household discovery and authorization come from the authenticated user's persisted server-side memberships.
 - CI security coverage must execute against PostgreSQL rather than silently skipping database-backed authorization assertions.
+- Deterministic formatting, typecheck, web-test, and web-build failures are checked in the cheap CI preflight before expensive PostgreSQL integration and self-hosted E2E jobs.
 - When a CI failure exposes a repeatable local or fixture problem, add a preventive guard/fixture fix before relying on another remote run.
 - User-facing work follows the vertical-slice rule in `AGENTS.md`.
 
@@ -41,6 +44,7 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Issue #21 / PR #26: supported local/self-hosted installer and startup flow, squash-merged as `20fadbe4988bf1a3c22682aa9d013f66782ff87f` after all CI lanes passed.
 - Issue #22: safe household backup and restore from the Arta interface, completed and closed.
 - Issue #31 / PR #32: MVP authentication and household authorization, squash-merged as `234338242874d16a0f90f2ef22efb11fb9d29582` after all CI lanes passed.
+- Issue #34 / PR #41: server-authoritative fresh-browser household bootstrap, including authenticated membership discovery, safe stale-local-selection fallback, bootstrap regression coverage, and CI fail-fast hardening; pending final merge after the post-documentation CI run is green.
 - Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`.
 
 ## Current engineering foundation
@@ -48,16 +52,18 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Client: React + TypeScript + Vite PWA; Dexie/IndexedDB capture outbox; Vitest + React Testing Library.
 - Server: Go modular monolith, `net/http` + `chi`, REST, `pgx`.
 - Database: PostgreSQL 17, Goose migrations, `sqlc` foundation, PostgreSQL integration tests.
-- Delivery: Docker Compose, supported POSIX/PowerShell launchers, and GitHub Actions web/server/self-hosted-E2E lanes.
+- Delivery: Docker Compose, supported POSIX/PowerShell launchers, and GitHub Actions with a cheap deterministic preflight before PostgreSQL server integration and self-hosted E2E lanes.
 - Data recovery: versioned household JSON backup/restore with explicit replace semantics and destructive confirmation.
-- Authentication: persisted users with Argon2id password hashes, server-side hashed sessions, register/login/me/logout, authenticated household ownership, owner-created single-use invites, member join, and server-enforced household membership on household-scoped routes.
+- Authentication: persisted users with Argon2id password hashes, server-side hashed sessions, register/login/me/logout, authenticated household ownership, authenticated membership discovery, owner-created single-use invites, member join, and server-enforced household membership on household-scoped routes.
 - Security regression coverage: PostgreSQL-backed tests prove cross-household reads/writes are rejected, forbidden writes do not mutate finance state, invite replay is rejected, and logout invalidates the old session. CI has an explicit security integration step so these assertions cannot silently disappear behind an unset database URL.
 
 ## Current execution target
 
-Issue #9 — **Research Android notification-based transaction capture**.
+Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture**.
 
-This is a research/decision slice, not permission to ingest notification-derived transactions directly into trusted financial state. The investigation must preserve Arta's capture-first rule: notification-derived candidates should enter the Transaction Inbox with provenance/confidence and idempotency protections rather than silently becoming financial truth.
+The active slice is Issue #34 / PR #41. Once it is merged, the next implementation target is Issue #35 — **Unify household onboarding, selection, and switching UX**.
+
+Issue #9 remains postponed while this stabilization sequence is active.
 
 ## Still to decide / refine
 
@@ -66,14 +72,14 @@ This is a research/decision slice, not permission to ingest notification-derived
 - Household timezone semantics.
 - Category model and future envelope/category budgeting.
 - Stronger concurrency constraints where required.
-- Android notification-based automatic capture feasibility (Issue #9).
+- Android notification-based automatic capture feasibility (Issue #9), postponed during stabilization.
 - Reconciliation UX expansion for linking known missing transactions/transfers and pending Inbox candidates.
 - Future backup migrations/compatibility policy beyond format version 1 and optional encryption at rest for exported files.
-- Richer multi-household selection/switching UX and permission roles beyond the MVP owner/member boundary.
+- Richer permission roles beyond the MVP owner/member boundary.
 
 ## Next execution steps
 
-1. Execute Issue #9 as a bounded research/decision slice covering Android notification access, privacy/security, parsing reliability, duplicate/idempotency risks, provenance/confidence, and safe ingestion architecture.
-2. Keep notification-derived data outside trusted ledger state until the user confirms it through the capture/review workflow.
-3. Record the resulting pursue/prototype/postpone/reject decision in the repository source of truth before implementation work begins.
-4. If the recommendation is to prototype, create a narrowly scoped implementation issue with explicit privacy and failure-mode acceptance criteria.
+1. Finish Issue #34 / PR #41 only after the final CI run is fully green, then squash-merge it and confirm Issue #34 closes.
+2. Execute Issue #35 as the next focused vertical slice: unify zero-household onboarding, existing-household selection, and household switching without weakening server-authoritative membership.
+3. Continue the Issue #33 stabilization sequence with owner invitation management, responsive app shell/session controls, dedicated financial workflow pages, dashboard redesign, and the final responsive/accessibility/UX pass.
+4. Resume Issue #9 only after the stabilization umbrella is sufficiently complete and the source of truth explicitly advances the execution target.
