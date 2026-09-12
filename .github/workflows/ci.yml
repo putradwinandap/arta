@@ -6,19 +6,32 @@ on:
   pull_request:
 
 jobs:
-  web:
+  preflight:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Check Go formatting before expensive server setup
+        run: |
+          unformatted="$(gofmt -l server)"
+          if [ -n "$unformatted" ]; then
+            echo "Go files need gofmt:"
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
       - run: npm install
       - run: npm run typecheck:web
       - run: npm run test:web
       - run: npm run build:web
 
   server:
+    needs: preflight
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -54,11 +67,12 @@ jobs:
         run: |
           test -n "$ARTA_DATABASE_URL"
           go test ./internal/httpserver -run '^TestAuthenticationAndHouseholdAuthorization$' -count=1 -v
-      - name: Verify server formatting, tests, and build
+      - name: Verify server tests and build
         working-directory: .
         run: sh scripts/server-check.sh check
 
   self-hosted-e2e:
+    needs: preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
