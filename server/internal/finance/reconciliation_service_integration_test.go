@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/putradwinandap/arta/server/internal/ledger"
 	"github.com/putradwinandap/arta/server/internal/wallet"
@@ -24,7 +23,8 @@ func TestReconciliationAdjustmentPreservesReportingSemantics(t *testing.T) {
 	}
 	defer pool.Close()
 	s := NewService(pool)
-	h, err := s.CreateHousehold(ctx, "Reconcile Household", uuid.New())
+	ownerID := createTestUser(t, pool)
+	h, err := s.CreateHousehold(ctx, "Reconcile Household", ownerID)
 	if err != nil {
 		t.Fatal(err)
 	}

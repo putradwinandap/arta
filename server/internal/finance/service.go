@@ -48,12 +48,8 @@ func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{pool: pool, now: time.Now}
 }
 
-func (s *Service) CreateHousehold(ctx context.Context, name string, ownerSubjectID uuid.UUID) (household.Household, error) {
+func (s *Service) CreateHousehold(ctx context.Context, name string, ownerUserID uuid.UUID) (household.Household, error) {
 	h, err := household.New(name)
-	if err != nil {
-		return household.Household{}, err
-	}
-	membership, err := household.NewMembership(h.ID, ownerSubjectID)
 	if err != nil {
 		return household.Household{}, err
 	}
@@ -67,7 +63,7 @@ func (s *Service) CreateHousehold(ctx context.Context, name string, ownerSubject
 	if _, err := tx.Exec(ctx, `INSERT INTO households (id, name) VALUES ($1, $2)`, h.ID, h.Name); err != nil {
 		return household.Household{}, err
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO household_members (id, household_id, subject_id) VALUES ($1, $2, $3)`, membership.ID, membership.HouseholdID, membership.SubjectID); err != nil {
+	if _, err := tx.Exec(ctx, `INSERT INTO household_members (id, household_id, subject_id, user_id, role) VALUES ($1, $2, $3, $4, 'owner')`, uuid.New(), h.ID, ownerUserID, ownerUserID); err != nil {
 		return household.Household{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {

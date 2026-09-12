@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/putradwinandap/arta/server/internal/goal"
 	"github.com/putradwinandap/arta/server/internal/ledger"
@@ -26,7 +25,8 @@ func TestGoalReservationUsesRealAvailableFunds(t *testing.T) {
 	}
 	defer pool.Close()
 	s := NewService(pool)
-	h, err := s.CreateHousehold(ctx, "Goal Household", uuid.New())
+	ownerID := createTestUser(t, pool)
+	h, err := s.CreateHousehold(ctx, "Goal Household", ownerID)
 	if err != nil {
 		t.Fatal(err)
 	}

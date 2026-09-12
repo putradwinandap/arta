@@ -27,7 +27,8 @@ func TestBudgetCountsOnlyEligibleConfirmedExpenses(t *testing.T) {
 	}
 	defer pool.Close()
 	service := NewService(pool)
-	house, err := service.CreateHousehold(ctx, "Budget Household", uuid.New())
+	ownerID := createTestUser(t, pool)
+	house, err := service.CreateHousehold(ctx, "Budget Household", ownerID)
 	if err != nil {
 		t.Fatal(err)
 	}

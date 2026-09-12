@@ -22,19 +22,18 @@ type financeHandlers struct {
 
 func (h financeHandlers) createHousehold(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Name           string `json:"name"`
-		OwnerSubjectID string `json:"ownerSubjectId"`
+		Name string `json:"name"`
 	}
 	if err := decodeJSON(r, &input); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
-	ownerID, err := uuid.Parse(input.OwnerSubjectID)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_owner_subject_id")
+	user, ok := authenticatedUser(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthenticated")
 		return
 	}
-	house, err := h.service.CreateHousehold(r.Context(), input.Name, ownerID)
+	house, err := h.service.CreateHousehold(r.Context(), input.Name, user.ID)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
