@@ -4,7 +4,7 @@ Last updated: 2026-09-12
 
 ## Current phase
 
-**Arta is in the authentication, household UX, navigation, and dashboard stabilization phase tracked by Issue #33. Issues #34 and #35 are complete; Issue #36 is the active vertical slice.**
+**Arta is in the authentication, household UX, navigation, and dashboard stabilization phase tracked by Issue #33. Issues #34, #35, and #36 are complete; Issue #37 is the active vertical slice.**
 
 Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, authenticated household authorization, server-backed household discovery after login, and a unified household entry/selection/switching experience.
 
@@ -47,6 +47,7 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 - Issue #31 / PR #32: MVP authentication and household authorization, squash-merged as `234338242874d16a0f90f2ef22efb11fb9d29582` after all CI lanes passed.
 - Issue #34 / PR #41: server-authoritative fresh-browser household bootstrap, authenticated membership discovery, safe stale-local-selection fallback, bootstrap regression coverage, and CI fail-fast hardening; squash-merged as `80576ddb9f5c4f2855fea3a164dcc29f5769a684` after CI #147 passed.
 - Issue #35 / PR #42: unified zero-household Create/Join entry, membership refresh after create/join, multi-household selection/switching, and household management access for existing users; merged as `d519d2e` and Issue #35 is closed.
+- Issue #36 / PR #43: owner-only household invitation management UI with token creation, copy interaction, safe states, frontend coverage, and dependency verification; merged as `c335eac` and Issue #36 is closed.
 - Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`.
 
 ## Current engineering foundation
@@ -71,7 +72,7 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 
 Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture**.
 
-The active slice is Issue #36 — **Add owner household invitation management UI**. Issue #35 / PR #42 is merged and closed.
+The active slice is Issue #37 — **Build responsive Arta app shell and integrate account/session controls**. Issues #35 and #36 are merged and closed.
 
 Issue #9 remains postponed while this stabilization sequence is active.
 
@@ -89,6 +90,6 @@ Issue #9 remains postponed while this stabilization sequence is active.
 
 ## Next execution steps
 
-1. Finish Issue #36: expose owner invitation creation/view/copy management in the household UI while preserving server-enforced owner authorization.
-3. Continue the Issue #33 stabilization sequence with responsive app shell/session controls, dedicated financial workflow pages, dashboard redesign, and the final responsive/accessibility/UX pass.
-4. Resume Issue #9 only after the stabilization umbrella is sufficiently complete and the source of truth explicitly advances the execution target.
+1. Execute Issue #37: build the responsive app shell and integrate account/session controls.
+2. Continue the Issue #33 stabilization sequence with dedicated financial workflow pages, dashboard redesign, and the final responsive/accessibility/UX pass.
+3. Resume Issue #9 only after the stabilization umbrella is sufficiently complete and the source of truth explicitly advances the execution target.
