@@ -1,12 +1,12 @@
 # Current State
 
-Last updated: 2026-09-11
+Last updated: 2026-09-12
 
 ## Current phase
 
-**Core financial, planning, reliability, operability, and household backup/restore capabilities are delivered as vertical slices; the next MVP gap is complete authentication and household authorization.**
+**The MVP foundation now includes authenticated household authorization; the next open product investigation is Android notification-based transaction capture.**
 
-Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, and a supported self-hosted setup/start flow.
+Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, and an authenticated household boundary.
 
 ## Established product and domain rules
 
@@ -22,7 +22,9 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Household overview/reporting is derived and does not persist duplicate financial truth.
 - Backup/restore is household-scoped, versioned, excludes runtime secrets, and MVP restore replaces rather than ambiguously merges household state.
 - Destructive local reset is fail-closed and requires explicit typed confirmation before persistent PostgreSQL data can be removed.
-- Browser-selected household state is a UI preference only; after the authentication slice is complete, authorization must be enforced server-side from authenticated household membership.
+- Browser-selected household state is a UI preference only. Authorization is enforced server-side from the authenticated user's persisted household membership.
+- CI security coverage must execute against PostgreSQL rather than silently skipping database-backed authorization assertions.
+- When a CI failure exposes a repeatable local or fixture problem, add a preventive guard/fixture fix before relying on another remote run.
 - User-facing work follows the vertical-slice rule in `AGENTS.md`.
 
 ## Implemented product slices
@@ -38,7 +40,8 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Issue #20 / PR #25: household overview and basic reporting, merged as `10daf17d322079c28c54035c1a95059142fe35ac`.
 - Issue #21 / PR #26: supported local/self-hosted installer and startup flow, squash-merged as `20fadbe4988bf1a3c22682aa9d013f66782ff87f` after all CI lanes passed.
 - Issue #22: safe household backup and restore from the Arta interface, completed and closed.
-- Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`; latest verified `main` CI is green.
+- Issue #31 / PR #32: MVP authentication and household authorization, squash-merged as `234338242874d16a0f90f2ef22efb11fb9d29582` after all CI lanes passed.
+- Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`.
 
 ## Current engineering foundation
 
@@ -47,19 +50,17 @@ Arta has the household/wallet foundation, confirmed financial core, capture-firs
 - Database: PostgreSQL 17, Goose migrations, `sqlc` foundation, PostgreSQL integration tests.
 - Delivery: Docker Compose, supported POSIX/PowerShell launchers, and GitHub Actions web/server/self-hosted-E2E lanes.
 - Data recovery: versioned household JSON backup/restore with explicit replace semantics and destructive confirmation.
-- Authentication: Argon2id/session foundation exists; complete registration/login/invitation/authorization product flows remain incomplete.
+- Authentication: persisted users with Argon2id password hashes, server-side hashed sessions, register/login/me/logout, authenticated household ownership, owner-created single-use invites, member join, and server-enforced household membership on household-scoped routes.
+- Security regression coverage: PostgreSQL-backed tests prove cross-household reads/writes are rejected, forbidden writes do not mutate finance state, invite replay is rejected, and logout invalidates the old session. CI has an explicit security integration step so these assertions cannot silently disappear behind an unset database URL.
 
 ## Current execution target
 
-Issue #31 — **Complete MVP authentication and household authorization**.
+Issue #9 — **Research Android notification-based transaction capture**.
 
-The target is the smallest complete authentication vertical slice: register/login -> authenticated server session -> create or join household -> server-verified household membership -> household-scoped financial workflows -> logout/session invalidation.
-
-`arta.householdId` may remain client-side active-household UI state, but it must never grant access by itself. Every household-scoped API must authorize the authenticated user against persisted household membership, and cross-household reads/writes must be rejected even when a client manually supplies another household ID.
+This is a research/decision slice, not permission to ingest notification-derived transactions directly into trusted financial state. The investigation must preserve Arta's capture-first rule: notification-derived candidates should enter the Transaction Inbox with provenance/confidence and idempotency protections rather than silently becoming financial truth.
 
 ## Still to decide / refine
 
-- Minimal invitation/join mechanics and the smallest useful owner/member permission model for MVP.
 - Generalized offline sync/conflict rules beyond capture outbox.
 - Distribution beyond a source checkout after the MVP path is validated.
 - Household timezone semantics.
@@ -68,11 +69,11 @@ The target is the smallest complete authentication vertical slice: register/logi
 - Android notification-based automatic capture feasibility (Issue #9).
 - Reconciliation UX expansion for linking known missing transactions/transfers and pending Inbox candidates.
 - Future backup migrations/compatibility policy beyond format version 1 and optional encryption at rest for exported files.
+- Richer multi-household selection/switching UX and permission roles beyond the MVP owner/member boundary.
 
 ## Next execution steps
 
-1. Execute Issue #31 as an end-to-end authentication + household authorization vertical slice.
-2. Make server-side authenticated membership, not browser-controlled household identity, the authorization boundary for all household-scoped APIs.
-3. Add PostgreSQL-backed integration tests proving unauthenticated access and cross-household access are rejected without mutation.
-4. Connect registration/login, household onboarding/join, active-household selection, and logout to the PWA.
-5. Run canonical local guards before remote CI and update this state again when the slice materially changes the project.
+1. Execute Issue #9 as a bounded research/decision slice covering Android notification access, privacy/security, parsing reliability, duplicate/idempotency risks, provenance/confidence, and safe ingestion architecture.
+2. Keep notification-derived data outside trusted ledger state until the user confirms it through the capture/review workflow.
+3. Record the resulting pursue/prototype/postpone/reject decision in the repository source of truth before implementation work begins.
+4. If the recommendation is to prototype, create a narrowly scoped implementation issue with explicit privacy and failure-mode acceptance criteria.
