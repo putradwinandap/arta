@@ -28,7 +28,7 @@ func TestHouseholdWalletLedgerAndCapturePersistenceFlow(t *testing.T) {
 	defer pool.Close()
 
 	service := NewService(pool)
-	ownerID := uuid.New()
+	ownerID := createTestUser(t, pool)
 	house, err := service.CreateHousehold(ctx, "Integration Household", ownerID)
 	if err != nil {
 		t.Fatalf("CreateHousehold() error = %v", err)
