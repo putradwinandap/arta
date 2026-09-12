@@ -38,7 +38,7 @@ type Service struct {
 }
 
 func NewService(pool *pgxpool.Pool) *Service { return &Service{pool: pool, now: time.Now} }
-func NormalizeEmail(email string) string      { return strings.ToLower(strings.TrimSpace(email)) }
+func NormalizeEmail(email string) string     { return strings.ToLower(strings.TrimSpace(email)) }
 
 func (s *Service) Register(ctx context.Context, email, password string) (User, string, time.Time, error) {
 	email = NormalizeEmail(email)
