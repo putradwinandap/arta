@@ -1,5 +1,6 @@
-import { FormEvent, useState } from 'react';
-import { createHousehold, joinHousehold } from './lib/api';
+import { FormEvent, useEffect, useState } from 'react';
+import { createHousehold, joinHousehold, listMyHouseholds } from './lib/api';
+import { HouseholdInvitePanel } from './HouseholdInvitePanel';
 
 type Mode = 'create' | 'join';
 type Props = { embedded?: boolean; onActivated: (householdId: string) => Promise<void> };
@@ -10,6 +11,9 @@ export function HouseholdEntry({ embedded = false, onActivated }: Props) {
   const [token, setToken] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [ownerHouseholdId, setOwnerHouseholdId] = useState('');
+
+  useEffect(() => { if (!embedded) return; const id = localStorage.getItem('arta.householdId') || ''; void listMyHouseholds().then((items) => { if (items.some((item) => item.id === id && item.role === 'owner')) setOwnerHouseholdId(id); }).catch(() => undefined); }, [embedded]);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setSaving(true); setError('');
@@ -32,5 +36,6 @@ export function HouseholdEntry({ embedded = false, onActivated }: Props) {
       {mode === 'create' ? <label>Household name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Keluarga Putra" maxLength={120} required /></label> : <label>Invite code<input value={token} onChange={(event) => setToken(event.target.value)} autoComplete="off" required /></label>}
       <button type="submit" disabled={saving}>{saving ? 'Please wait…' : mode === 'create' ? 'Create household' : 'Join household'}</button>
     </form>
+    {ownerHouseholdId && <HouseholdInvitePanel householdId={ownerHouseholdId} />}
   </section>;
 }
