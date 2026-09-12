@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/putradwinandap/arta/server/internal/ledger"
 	"github.com/putradwinandap/arta/server/internal/wallet"
@@ -25,7 +24,8 @@ func TestHouseholdOverviewDerivesTrustedFinancialState(t *testing.T) {
 	defer pool.Close()
 	service := NewService(pool)
 	service.now = func() time.Time { return time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC) }
-	house, err := service.CreateHousehold(ctx, "Overview Household", uuid.New())
+	ownerID := createTestUser(t, pool)
+	house, err := service.CreateHousehold(ctx, "Overview Household", ownerID)
 	if err != nil {
 		t.Fatal(err)
 	}
