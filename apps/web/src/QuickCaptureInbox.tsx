@@ -39,6 +39,28 @@ function captureApiPayload(item: LocalCapture) {
   };
 }
 
+function createCaptureId() {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+async function withCaptureTimeout<T>(stage: string, operation: Promise<T>) {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(`capture_${stage}_timeout`)), 5000);
+  });
+  try {
+    return await Promise.race([operation, timeout]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+}
+
 export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) {
   const [captures, setCaptures] = useState<TransactionCapture[]>([]);
   const [amount, setAmount] = useState('');
@@ -87,8 +109,12 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
     function handleOnline() {
       void syncLocalCaptures();
     }
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') void syncLocalCaptures();
+    }
     window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => { window.removeEventListener('online', handleOnline); document.removeEventListener('visibilitychange', handleVisibilityChange); };
   }, [refreshInbox, refreshLocalPendingCount, syncLocalCaptures]);
 
   async function handleQuickCapture(event: FormEvent) {
@@ -103,7 +129,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
     setError('');
     setMessage('');
     const localCapture: LocalCapture = {
-      id: crypto.randomUUID(),
+      id: createCaptureId(),
       householdId,
       amountMinor,
       note: note.trim(),
@@ -112,20 +138,34 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
     };
 
     try {
-      await localDb.captures.put(localCapture);
+      if (!navigator.onLine) {
+        console.info('[quick-capture] offline; indexeddb.put:start', { id: localCapture.id, householdId });
+        await withCaptureTimeout('indexeddb_put', localDb.captures.put(localCapture));
+        console.info('[quick-capture] offline; indexeddb.put:complete', { id: localCapture.id });
+        await refreshLocalPendingCount();
+        setMessage('Saved on this device. Arta will retry when the server is reachable.');
+        setAmount('');
+        setNote('');
+        return;
+      }
       try {
-        await createCapture(householdId, captureApiPayload(localCapture));
-        await localDb.captures.delete(localCapture.id);
-        await refreshInbox();
+        console.info('[quick-capture] api.post:start', { id: localCapture.id, householdId });
+        await withCaptureTimeout('api_post', createCapture(householdId, captureApiPayload(localCapture)));
+        console.info('[quick-capture] api.post:complete', { id: localCapture.id });
+        void refreshInbox().catch((refreshError) => setError(errorMessage(refreshError)));
         setMessage('Captured. You can classify it later.');
-      } catch {
-        await localDb.captures.update(localCapture.id, { syncStatus: 'failed' });
+      } catch (error) {
+        console.error('[quick-capture] api.post:failed', error);
+        console.info('[quick-capture] fallback indexeddb.put:start', { id: localCapture.id, householdId });
+        await withCaptureTimeout('fallback_indexeddb_put', localDb.captures.put({ ...localCapture, syncStatus: 'failed' }));
+        console.info('[quick-capture] fallback indexeddb.put:complete', { id: localCapture.id });
         setMessage('Saved on this device. Arta will retry when the server is reachable.');
       }
       await refreshLocalPendingCount();
       setAmount('');
       setNote('');
     } catch (err) {
+      console.error('[quick-capture] failed-before-api', err);
       setError(errorMessage(err));
     } finally {
       setSaving(false);
@@ -153,7 +193,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
         amountMinor: Number(reviewAmount),
         note: reviewNote,
       });
-      await refreshInbox();
+        void refreshInbox().catch((refreshError) => setError(errorMessage(refreshError)));
       setEditingId(null);
       setMessage('Review saved. Ready to confirm.');
     } catch (err) {
