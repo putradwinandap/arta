@@ -97,9 +97,10 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 - Reconciliation UX expansion for linking known missing transactions/transfers and pending Inbox candidates.
 - Future backup migrations/compatibility policy beyond format version 1 and optional encryption at rest for exported files.
 - Richer permission roles beyond the MVP owner/member boundary.
+- Planned budget evolution (Issue #50): support multiple non-overlapping budget periods and optional opt-in auto-renewal. Semantics, cadence, renewal trigger, and conflict behavior remain open decisions; no implementation has started.
 
 ## Next execution steps
 
 1. Keep the stabilization baseline maintained after Issues #33–#40 completion.
-2. Define the next near-term product target through roadmap/issue triage.
+2. Define the next near-term product target through roadmap/issue triage, with Issue #50 as a planned budget-evolution candidate.
 3. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.
