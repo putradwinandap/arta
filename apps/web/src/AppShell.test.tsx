@@ -27,6 +27,16 @@ describe('AppShell', () => {
     expect(menu).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('closes the mobile menu with Escape and exposes its controlled region', () => {
+    render(<AppShell email="family@example.com" offline={false} onLogout={vi.fn()}><p>content</p></AppShell>);
+    const menu = screen.getByRole('button', { name: 'Menu' });
+    fireEvent.click(menu);
+    expect(menu).toHaveAttribute('aria-controls', 'mobile-navigation');
+    expect(screen.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(menu).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('keeps the active destination in sync with browser history', () => {
     window.history.pushState({}, '', '/wallets');
     render(<AppShell email="family@example.com" offline={false} onLogout={vi.fn()}><p>content</p></AppShell>);
