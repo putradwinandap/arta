@@ -4,7 +4,7 @@ Last updated: 2026-09-15
 
 ## Current phase
 
-**Arta is in the authentication, household UX, navigation, and dashboard stabilization phase tracked by Issue #33. Issues #34, #35, #36, #37, #38, and #44 are complete.**
+**Arta is in the authentication, household UX, navigation, and dashboard stabilization phase tracked by Issue #33. Issues #34, #35, #36, #37, #38, #39, and #44 are complete; Issue #40 remains the active UX polish slice.**
 
 Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, authenticated household authorization, server-backed household discovery after login, and a unified household entry/selection/switching experience.
 
@@ -66,7 +66,7 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 - Offline cache hardening: auth and household snapshots are invalidated on logout, explicit HTTP 401, and authenticated user changes; snapshots carry the active user ID; local captures remain retained when retry receives 401 and are eligible for a later retry after authentication recovery.
 - Responsive app shell (Issue #37, PR #46, merged `ad341d4`): desktop sidebar and mobile menu now expose account/session controls, active household context, logout, and scoped destinations for dashboard, transactions, wallets, budgets, goals, reconciliation, and family/settings. Navigation controls preserve native keyboard/focus behavior, and representative desktop/mobile shell tests plus full E2E coverage are green.
 - Dedicated financial workflow pages (Issue #38): Transactions & Inbox, Wallets, Budgets, Financial Goals, Reconciliation, and Family & Settings have clear routes and scoped surfaces. Dashboard no longer presents unrelated management forms; route titles and browser history state remain synchronized. Existing create/manage/review actions and responsive shell behavior remain covered by frontend and E2E verification.
-- Dashboard overview (Issue #39, in progress): the dashboard now uses derived finance, capture, budget, goal, and reconciliation data to show physical/reserved/available funds, pending review, summary health, recent activity, useful empty/error states, and links to dedicated workflows. Management forms remain on their dedicated pages; remaining closure work is test/CI verification and UX polish tracked by Issue #40.
+- Dashboard overview (Issue #39 / PR #48, complete): the dashboard uses derived finance, capture, budget, goal, and reconciliation data to show physical/reserved/available funds, pending review, summary health, recent activity, useful empty/error states, and links to dedicated workflows. Management forms remain on their dedicated pages. Frontend tests, production build, Docker E2E, and CI all passed before merge.
 
 ## CI lessons captured during Issue #35
 
@@ -77,9 +77,9 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 
 ## Current execution target
 
-Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture**.
+Issue #40 — **Run responsive, accessibility, and UX stabilization pass**.
 
-Issue #37 — **Build responsive Arta app shell and integrate account/session controls** — is complete and merged via PR #46 (`ad341d4`). Issue #38 — **Separate financial management workflows into dedicated pages** — is complete.
+Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture** — is substantially delivered through Issues #34–#39. Issue #37 — **Build responsive Arta app shell and integrate account/session controls** — is complete and merged via PR #46 (`ad341d4`). Issue #38 — **Separate financial management workflows into dedicated pages** — is complete. Issue #39 — **Redesign Dashboard as a focused household financial overview** — is complete and merged via PR #48.
 
 Issue #9 remains postponed while this stabilization sequence is active.
 
@@ -99,6 +99,6 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 
 ## Next execution steps
 
-1. Execute Issue #39: dashboard redesign.
-2. Continue with Issue #40 responsive/accessibility/UX polish.
+1. Execute Issue #40: responsive/accessibility/UX polish.
+2. Reconcile and close the Issue #33 stabilization umbrella when Issue #40 and its required verification are complete.
 3. Resume Issue #9 only after the stabilization umbrella is sufficiently complete and the source of truth explicitly advances the execution target.
