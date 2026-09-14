@@ -9,6 +9,11 @@ export function BudgetMount() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
 
   useEffect(() => {
+    document.title = 'Budgets · Arta';
+    return () => { document.title = 'Arta'; };
+  }, []);
+
+  useEffect(() => {
     const timer = window.setInterval(() => {
       const next = localStorage.getItem(HOUSEHOLD_STORAGE_KEY) ?? '';
       setHouseholdId((current) => current === next ? current : next);

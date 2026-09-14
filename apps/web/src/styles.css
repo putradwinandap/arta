@@ -16,7 +16,7 @@ body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradie
 .mobile-household { padding: 8px 12px; color: #6a786e; font-size: 12px; font-weight: 700; }
 .mobile-header { display: none; }
 body[data-page="dashboard"] .layout-grid, body[data-page="dashboard"] .finance-grid, body[data-page="dashboard"] .activity-panel { display: none; }
-body[data-page="wallets"] .capture-section, body[data-page="wallets"] .finance-grid, body[data-page="wallets"] .activity-panel { display: none; }
+body[data-page="wallets"] .capture-section, body[data-page="wallets"] .quick-capture-card, body[data-page="wallets"] .finance-grid, body[data-page="wallets"] .activity-panel { display: none; }
 body[data-page="transactions"] .finance-summary, body[data-page="transactions"] .layout-grid { display: none; }
 body[data-connection="offline"]::before { content: 'Offline mode · cached data is read-only · Quick Capture remains available'; display: block; position: sticky; top: 0; z-index: 20; padding: 9px 16px; background: #fff1c7; color: #704f0d; font-size: 13px; font-weight: 700; text-align: center; border-bottom: 1px solid #e7c96b; }
 button, input, select { font: inherit; }
