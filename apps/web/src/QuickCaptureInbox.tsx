@@ -39,6 +39,10 @@ function captureApiPayload(item: LocalCapture) {
   };
 }
 
+function isUnauthenticated(error: unknown) {
+  return error instanceof Error && /^(unauthenticated|http_401)$/.test(error.message);
+}
+
 function createCaptureId() {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
   const bytes = new Uint8Array(16);
@@ -94,7 +98,8 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
         await createCapture(householdId, captureApiPayload(item));
         await localDb.captures.delete(item.id);
         syncedAny = true;
-      } catch {
+      } catch (error) {
+        if (isUnauthenticated(error)) return;
         await localDb.captures.update(item.id, { syncStatus: 'failed' });
       }
     }

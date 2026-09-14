@@ -127,7 +127,7 @@ Initial synchronization principles:
 - Do not use blind last-write-wins for sensitive financial conflicts.
 - Keep the MVP sync engine deliberately small rather than introducing CRDTs or a general-purpose distributed database.
 
-The current scaffold creates the IndexedDB/Dexie boundary but intentionally does **not** implement the transaction synchronization engine yet.
+The current client implements a narrow IndexedDB/Dexie capture outbox with stable IDs and retry on reconnect/app visibility. Generalized transaction synchronization and offline synchronization for other domains remain intentionally out of scope.
 
 ## Distribution topology
 

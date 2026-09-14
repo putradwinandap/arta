@@ -147,7 +147,7 @@ Quick Capture
 - Repeating confirmation is idempotent: an already-confirmed capture resolves to its existing linked transaction instead of producing another one.
 - Capture creation is idempotent by the client-generated capture UUID. A retry with the same ID does not overwrite the original captured facts.
 - The PWA maintains a narrow IndexedDB capture outbox so a quick capture can survive temporary server/network unavailability and retry with the same stable ID.
-- This outbox is intentionally limited to the capture boundary; generalized offline synchronization remains future work.
+- This outbox is intentionally limited to the capture boundary; generalized offline synchronization remains future work. Auth and household read snapshots are separate UI cache data and never replace server authorization or financial truth.
 - Provenance is preserved through `source`, `captured_at`, and the capture-to-confirmed-transaction link instead of silently replacing the pending record.
 
 ## Transfer

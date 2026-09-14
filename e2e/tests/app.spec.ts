@@ -93,6 +93,23 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await expect(page.locator('article.activity-row').filter({ hasText: 'Coffee' })).toBeVisible();
   await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
 
+  await page.route('**/api/**', (route) => route.abort());
+  await page.reload();
+  await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: /offline mode/i }).first()).toBeVisible();
+  await expect(page.locator('article.activity-row').filter({ hasText: 'Coffee' })).toBeVisible();
+
+  await page.getByLabel('Quick capture amount').fill('12345');
+  await page.getByLabel('Quick capture note').fill('Offline coffee');
+  await page.getByRole('button', { name: /^capture$/i }).click();
+  await expect(page.getByText(/saved on this device/i)).toBeVisible();
+  await expect(page.getByText(/1 capture safely waiting/i)).toBeVisible();
+
+  await page.unroute('**/api/**');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /1 pending review/i })).toBeVisible();
+  await expect(page.getByText('Offline coffee')).toBeVisible();
+
   await page.getByRole('button', { name: /log out/i }).click();
   await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
 });
