@@ -1,77 +1,47 @@
-import 'fake-indexeddb/auto';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DashboardPage as App } from './App';
-import { localDb } from './lib/db';
+import { HouseholdOverview } from './HouseholdOverviewMount';
 
-const household = { id: '11111111-1111-4111-8111-111111111111', name: 'Keluarga Arta' };
-const membership = { ...household, role: 'owner' };
-const secondHousehold = { id: '55555555-5555-4555-8555-555555555555', name: 'Keluarga Kedua' };
-const secondMembership = { ...secondHousehold, role: 'member' };
-const emptyOverview = { balances: [], totals: { incomeMinor: 0, expenseMinor: 0 }, activity: [] };
+const householdId = '11111111-1111-4111-8111-111111111111';
+const wallet = { id: '33333333-3333-4333-8333-333333333333', householdId, name: 'Cash Rumah', type: 'cash', currency: 'IDR', status: 'active' };
 
-beforeEach(async () => { localStorage.clear(); vi.restoreAllMocks(); vi.stubGlobal('crypto', { randomUUID: () => '22222222-2222-4222-8222-222222222222' }); await localDb.captures.clear(); });
+beforeEach(() => { localStorage.clear(); localStorage.setItem('arta.householdId', householdId); vi.restoreAllMocks(); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-describe('App household wallet finance and capture slice', () => {
-  it('shows unified Create Household and Join Family tabs when no membership exists', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => { if (String(input) === '/api/auth/households') return { ok: true, json: async () => ({ households: [] }) } as Response; throw new Error(`unexpected fetch ${String(input)}`); }));
-    render(<App />);
-    expect(await screen.findByRole('heading', { name: /choose how to get started/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /create household/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: /join family/i }));
-    expect(screen.getByLabelText(/invite code/i)).toBeInTheDocument();
+function stubDashboard(overrides: Record<string, unknown> = {}) {
+  const overview = { balances: [{ walletId: wallet.id, amountMinor: 750000, reservedMinor: 100000, availableMinor: 650000, currency: 'IDR' }], totals: { incomeMinor: 1000000, expenseMinor: 250000 }, activity: [{ id: 'activity-1', type: 'expense', walletId: wallet.id, amountMinor: 250000, currency: 'IDR', occurredAt: new Date().toISOString(), note: 'Groceries' }], currentBudgets: [{ id: 'budget-1', householdId, currency: 'IDR', periodStart: '2026-09-01', periodEnd: '2026-09-30', amountMinor: 500000, spentMinor: 250000, remainingMinor: 250000 }], activeGoals: [{ id: 'goal-1', householdId, name: 'Emergency fund', currency: 'IDR', targetAmountMinor: 1000000, status: 'active', reservedMinor: 100000, remainingMinor: 900000 }], ...overrides };
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const path = String(input);
+    if (path.endsWith('/finance')) return { ok: true, json: async () => overview } as Response;
+    if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [wallet] }) } as Response;
+    if (path.endsWith('/captures/')) return { ok: true, json: async () => ({ captures: [{ id: 'capture-1', householdId, amountMinor: 50000, status: 'pending' }] }) } as Response;
+    if (path.endsWith('/reconciliations/')) return { ok: true, json: async () => ({ reconciliations: [] }) } as Response;
+    throw new Error(`unexpected fetch ${path}`);
+  }));
+}
+
+describe('Dashboard overview', () => {
+  it('shows trusted balance distinctions and summary links', async () => {
+    stubDashboard(); render(<HouseholdOverview householdId={householdId} />);
+    expect(await screen.findByRole('heading', { name: /your financial position/i })).toBeInTheDocument();
+    expect(screen.getByText(/physical · reserved/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 pending review/i)).toBeInTheDocument();
+    expect(screen.getByText('Emergency fund')).toBeInTheDocument();
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /manage budgets/i })).toHaveAttribute('href', '/budgets');
   });
 
-  it('creates a household, refreshes memberships, and activates it', async () => {
-    let created = false;
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => { const path = String(input); if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: created ? [membership] : [] }) } as Response; if (path === '/api/households/') { created = true; return { ok: true, json: async () => household } as Response; } if (path.endsWith(`/households/${household.id}`)) return { ok: true, json: async () => household } as Response; if (path.endsWith('/captures/')) return { ok: true, json: async () => ({ captures: [] }) } as Response; if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [] }) } as Response; if (path.endsWith('/finance')) return { ok: true, json: async () => emptyOverview } as Response; throw new Error(`unexpected fetch ${path}`); }));
-    render(<App />); fireEvent.change(await screen.findByLabelText(/household name/i), { target: { value: household.name } }); fireEvent.click(screen.getByRole('button', { name: /create household/i }));
-    expect(await screen.findByRole('heading', { name: household.name })).toBeInTheDocument(); expect(localStorage.getItem('arta.householdId')).toBe(household.id);
+  it('keeps empty financial states useful', async () => {
+    stubDashboard({ balances: [], currentBudgets: [], activeGoals: [], activity: [] }); render(<HouseholdOverview householdId={householdId} />);
+    expect(await screen.findByRole('heading', { name: /start your household overview/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /add a wallet/i })).toHaveAttribute('href', '/wallets');
+    expect(screen.getByText(/no budget covers today/i)).toBeInTheDocument();
+    expect(screen.getByText(/no active financial goals yet/i)).toBeInTheDocument();
   });
 
-  it('joins a household, refreshes memberships, and activates it', async () => {
-    let joined = false;
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => { const path = String(input); if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: joined ? [membership] : [] }) } as Response; if (path === '/api/invites/redeem') { joined = true; return { ok: true, json: async () => ({ householdId: household.id }) } as Response; } if (path.endsWith(`/households/${household.id}`)) return { ok: true, json: async () => household } as Response; if (path.endsWith('/captures/')) return { ok: true, json: async () => ({ captures: [] }) } as Response; if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [] }) } as Response; if (path.endsWith('/finance')) return { ok: true, json: async () => emptyOverview } as Response; throw new Error(`unexpected fetch ${path}`); }));
-    render(<App />); fireEvent.click(await screen.findByRole('tab', { name: /join family/i })); fireEvent.change(screen.getByLabelText(/invite code/i), { target: { value: 'invite-token' } }); fireEvent.click(screen.getByRole('button', { name: /join household/i }));
-    expect(await screen.findByRole('heading', { name: household.name })).toBeInTheDocument(); expect(localStorage.getItem('arta.householdId')).toBe(household.id);
-  });
-
-  it('lets a multi-household user switch only among server memberships', async () => {
-    localStorage.setItem('arta.householdId', household.id);
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => { const path = String(input); if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: [membership, secondMembership] }) } as Response; if (path.endsWith(`/households/${household.id}`)) return { ok: true, json: async () => household } as Response; if (path.endsWith(`/households/${secondHousehold.id}`)) return { ok: true, json: async () => secondHousehold } as Response; if (path.endsWith('/captures/')) return { ok: true, json: async () => ({ captures: [] }) } as Response; if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [] }) } as Response; if (path.endsWith('/finance')) return { ok: true, json: async () => emptyOverview } as Response; throw new Error(`unexpected fetch ${path}`); }));
-    render(<App />); const selector = await screen.findByLabelText(/active household/i); fireEvent.change(selector, { target: { value: secondHousehold.id } });
-    expect(await screen.findByRole('heading', { name: secondHousehold.name })).toBeInTheDocument(); expect(localStorage.getItem('arta.householdId')).toBe(secondHousehold.id);
-  });
-
-  it('keeps create and join actions available to an existing household user', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => { const path = String(input); if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: [membership] }) } as Response; if (path.endsWith(`/households/${household.id}`)) return { ok: true, json: async () => household } as Response; if (path.endsWith('/captures/')) return { ok: true, json: async () => ({ captures: [] }) } as Response; if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [] }) } as Response; if (path.endsWith('/finance')) return { ok: true, json: async () => emptyOverview } as Response; throw new Error(`unexpected fetch ${path}`); }));
-    render(<App />); fireEvent.click(await screen.findByRole('button', { name: /manage households/i })); expect(screen.getByRole('tab', { name: /create household/i })).toBeInTheDocument(); expect(screen.getByRole('tab', { name: /join family/i })).toBeInTheDocument();
-  });
-
-  it('reopens a saved household and displays wallet balances, totals, and an empty Inbox', async () => {
-    localStorage.setItem('arta.householdId', household.id); const wallet = { id: '33333333-3333-4333-8333-333333333333', householdId: household.id, name: 'Cash Rumah', type: 'cash', currency: 'IDR', status: 'active' }; const overview = { balances: [{ walletId: wallet.id, amountMinor: 750000, currency: 'IDR' }], totals: { incomeMinor: 1000000, expenseMinor: 250000 }, activity: [{ id: '44444444-4444-4444-8444-444444444444', type: 'expense', walletId: wallet.id, amountMinor: 250000, currency: 'IDR', occurredAt: new Date().toISOString(), note: 'Groceries' }] };
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => { const path = String(input); if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: [membership] }) } as Response; if (path.endsWith(`/households/${household.id}`)) return { ok: true, json: async () => household } as Response; if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [wallet] }) } as Response; if (path.endsWith('/finance')) return { ok: true, json: async () => overview } as Response; if (path.endsWith('/captures/')) return { ok: true, json: async () => ({ captures: [] }) } as Response; throw new Error(`unexpected fetch ${path}`); }));
-    render(<App />); expect(await screen.findByRole('heading', { name: household.name })).toBeInTheDocument(); expect(screen.getByRole('heading', { name: wallet.name })).toBeInTheDocument(); expect(screen.getByText(/1 active wallet/i)).toBeInTheDocument(); expect(screen.getByText('Groceries')).toBeInTheDocument(); expect(await screen.findByRole('heading', { name: /0 pending review/i })).toBeInTheDocument(); await waitFor(() => expect(screen.getByLabelText(/quick capture amount/i)).toBeInTheDocument());
-  });
-
-  it('opens the last household snapshot when the server is unreachable', async () => {
-    const wallet = { id: '33333333-3333-4333-8333-333333333333', householdId: household.id, name: 'Cash Offline', type: 'cash', currency: 'IDR', status: 'active' };
-    localStorage.setItem('arta.activeUserId', 'user-1');
-    localStorage.setItem('arta.appSnapshot', JSON.stringify({ userId: 'user-1', memberships: [membership], household, wallets: [wallet], overview: { ...emptyOverview, balances: [{ walletId: wallet.id, amountMinor: 125000, currency: 'IDR' }] }, savedAt: '2026-09-12T10:00:00.000Z' }));
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
-    render(<App />);
-    expect(await screen.findByRole('heading', { name: household.name })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: wallet.name })).toBeInTheDocument();
-    expect(screen.getByText(/offline mode/i)).toBeInTheDocument();
-  });
-
-  it('does not restore a snapshot belonging to another user', async () => {
-    localStorage.setItem('arta.activeUserId', 'user-2');
-    localStorage.setItem('arta.appSnapshot', JSON.stringify({ userId: 'user-1', memberships: [membership], household, wallets: [], overview: emptyOverview, savedAt: '2026-09-12T10:00:00.000Z' }));
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
-    render(<App />);
-    await waitFor(() => expect(screen.queryByRole('heading', { name: household.name })).not.toBeInTheDocument());
+  it('shows an error state when required overview data fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); })); render(<HouseholdOverview householdId={householdId} />);
+    expect(await screen.findByText(/unable to load dashboard/i)).toBeInTheDocument();
   });
 });
