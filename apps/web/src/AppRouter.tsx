@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { App } from './App';
+import { DashboardPage, TransactionsPage, WalletsPage } from './App';
 import { BudgetMount } from './BudgetMount';
 import { GoalMount } from './GoalMount';
 import { ReconciliationMount } from './ReconciliationMount';
@@ -26,5 +26,7 @@ export function AppRouter() {
   if (route === 'goals') return <GoalMount />;
   if (route === 'reconciliation') return <ReconciliationMount />;
   if (route === 'family') return <BackupRestoreMount />;
-  return <App view={route === 'wallets' ? 'wallets' : route === 'transactions' ? 'transactions' : 'dashboard'} />;
+  if (route === 'wallets') return <WalletsPage />;
+  if (route === 'transactions') return <TransactionsPage />;
+  return <DashboardPage />;
 }

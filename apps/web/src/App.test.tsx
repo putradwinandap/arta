@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { App } from './App';
+import { DashboardPage as App } from './App';
 import { localDb } from './lib/db';
 
 const household = { id: '11111111-1111-4111-8111-111111111111', name: 'Keluarga Arta' };
