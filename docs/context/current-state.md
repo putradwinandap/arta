@@ -8,7 +8,7 @@ Last updated: 2026-09-15
 
 Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, authenticated household authorization, server-backed household discovery after login, and a unified household entry/selection/switching experience.
 
-Issue #9 (Android notification-based transaction capture research) is intentionally postponed until the stabilization umbrella is complete enough to resume product expansion safely.
+Issue #9 (Android notification-based transaction capture research) remains intentionally postponed as a coming-soon exploration; it is not the current execution target.
 
 ## Established product and domain rules
 
@@ -78,11 +78,11 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 
 ## Current execution target
 
-Issue #9 — **Android notification-based transaction capture research**.
+No active execution target is scheduled yet; the stabilization baseline is complete and the next near-term priority should be chosen through roadmap/issue triage.
 
 Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture** — is complete through Issues #34–#40. Issue #37 — **Build responsive Arta app shell and integrate account/session controls** — is complete and merged via PR #46 (`ad341d4`). Issue #38 — **Separate financial management workflows into dedicated pages** — is complete. Issue #39 — **Redesign Dashboard as a focused household financial overview** — is complete and merged via PR #48. Issue #40 — **Run responsive, accessibility, and UX stabilization pass** — is complete and merged via PR #49.
 
-Issue #9 is now the next product research target after stabilization completion.
+Issue #9 remains a future/coming-soon research target and is not scheduled for immediate execution.
 
 Issue #44 — **Support offline-authenticated reload and cached household mode** — is complete and merged via PR #45 (`d3b7f73`).
 
@@ -93,13 +93,13 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 - Household timezone semantics.
 - Category model and future envelope/category budgeting.
 - Stronger concurrency constraints where required.
-- Android notification-based automatic capture feasibility (Issue #9), postponed during stabilization.
+- Android notification-based automatic capture feasibility (Issue #9), future/coming soon and intentionally postponed.
 - Reconciliation UX expansion for linking known missing transactions/transfers and pending Inbox candidates.
 - Future backup migrations/compatibility policy beyond format version 1 and optional encryption at rest for exported files.
 - Richer permission roles beyond the MVP owner/member boundary.
 
 ## Next execution steps
 
-1. Resume Issue #9: Android notification-based transaction capture research.
-2. Reconcile and close the Issue #33 stabilization umbrella in GitHub with the delivered child slices.
-3. Advance the source of truth after the Issue #9 research outcome is accepted.
+1. Keep the stabilization baseline maintained after Issues #33–#40 completion.
+2. Define the next near-term product target through roadmap/issue triage.
+3. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.
