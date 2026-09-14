@@ -39,8 +39,8 @@ export function HouseholdOverview({ householdId }: { householdId: string }) {
   }, [householdId]);
 
   const names = useMemo(() => new Map(wallets.map((wallet) => [wallet.id, wallet.name])), [wallets]);
-  if (error) return <main className="app-shell"><section className="panel"><p className="error">Unable to load dashboard: {error}</p><button type="button" onClick={() => window.location.reload()}>Retry</button></section></main>;
-  if (!overview) return <main className="app-shell"><section className="panel"><p className="muted">Loading household overview…</p></section></main>;
+  if (error) return <main className="app-shell"><section className="panel"><p className="error" role="alert">Unable to load dashboard: {error}</p><button type="button" onClick={() => window.location.reload()}>Retry</button></section></main>;
+  if (!overview) return <main className="app-shell"><section className="panel" role="status" aria-live="polite"><p className="muted">Loading household overview…</p></section></main>;
 
   const budgets = overview.currentBudgets ?? [];
   const goals = overview.activeGoals ?? [];
