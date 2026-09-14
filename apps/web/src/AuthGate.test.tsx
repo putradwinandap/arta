@@ -13,7 +13,7 @@ describe('AuthGate offline recovery', () => {
     render(<AuthGate><p>dashboard</p></AuthGate>);
     expect(await screen.findByText('dashboard')).toBeInTheDocument();
     expect(screen.getByText(/family@example.com/)).toBeInTheDocument();
-    expect(screen.getByText(/offline mode/i)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/offline mode/i);
   });
 
   it('does not restore the cached user after a server 401', async () => {
@@ -33,7 +33,7 @@ describe('AuthGate offline recovery', () => {
     }));
     render(<AuthGate><p>dashboard</p></AuthGate>);
     await screen.findByText('dashboard');
-    screen.getByRole('button', { name: /log out/i }).click();
+    screen.getAllByRole('button', { name: /log out/i })[0].click();
     await screen.findByRole('heading', { name: /welcome back/i });
     expect(localStorage.getItem('arta.authUser')).toBeNull();
     expect(localStorage.getItem('arta.appSnapshot')).toBeNull();

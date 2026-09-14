@@ -12,7 +12,10 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill('correct horse battery staple');
   await page.getByRole('button', { name: /create account/i }).click();
-  await expect(page.getByText(new RegExp(`Signed in as ${email}`, 'i'))).toBeVisible();
+  await expect(page.getByText(email, { exact: true })).toBeVisible();
+  await expect(page.locator('aside.app-sidebar nav.primary-nav')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Dashboard' }).first()).toHaveAttribute('href', '/');
+  await expect(page.getByRole('link', { name: 'Transactions & Inbox' }).first()).toHaveAttribute('href', '/transactions');
 
   await expect(page.getByRole('heading', { name: /choose how to get started/i })).toBeVisible();
   await expect(page.getByRole('tab', { name: /create household/i })).toHaveAttribute('aria-selected', 'true');
@@ -21,6 +24,8 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await page.getByRole('button', { name: /create household/i }).click();
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
 
+  await page.getByRole('link', { name: 'Wallets' }).first().click();
+  await expect(page).toHaveURL(/\/wallets$/);
   const createPanel = page.locator('aside.create-panel');
   await createPanel.getByLabel(/wallet name/i).fill('BCA Utama');
   await createPanel.locator('select').selectOption('bank');
@@ -32,20 +37,30 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await createPanel.getByRole('button', { name: /add wallet/i }).click();
   await expect(page.getByRole('heading', { name: 'Cash Rumah' })).toBeVisible();
 
+  await page.getByRole('link', { name: 'Budgets' }).first().click();
+  await expect(page).toHaveURL(/\/budgets$/);
   await expect(page.getByRole('heading', { name: /plan a period/i })).toBeVisible();
   await page.getByLabel('Budget amount').fill('500000');
   await page.getByRole('button', { name: /create budget/i }).click();
   await expect(page.locator('article.budget-card')).toContainText('500.000');
   await expect(page.locator('article.budget-card')).toContainText('Spent');
 
+  await page.getByRole('link', { name: 'Transactions & Inbox' }).first().click();
+  await expect(page).toHaveURL(/\/transactions$/);
   await page.getByLabel('Quick capture amount').fill('25000');
   await page.getByLabel('Quick capture note').fill('Coffee');
   await page.getByRole('button', { name: /^capture$/i }).click();
   await expect(page.getByText('Coffee')).toBeVisible();
   await expect(page.getByRole('heading', { name: /1 pending review/i })).toBeVisible();
+  await page.getByRole('link', { name: 'Budgets' }).first().click();
+  await expect(page).toHaveURL(/\/budgets$/);
+  await page.getByRole('link', { name: 'Budgets' }).first().click();
+  await expect(page).toHaveURL(/\/budgets$/);
   await page.getByRole('button', { name: /refresh spending/i }).click();
   await expect(page.locator('article.budget-card')).toContainText(/Spent Rp\s*0/);
 
+  await page.getByRole('link', { name: 'Transactions & Inbox' }).first().click();
+  await expect(page).toHaveURL(/\/transactions$/);
   const inboxItem = page.locator('article.inbox-item').filter({ hasText: 'Coffee' });
   await inboxItem.getByRole('button', { name: 'Review' }).click();
   await page.getByLabel('Review transaction type').selectOption('expense');
@@ -75,23 +90,32 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await page.getByRole('button', { name: /transfer money/i }).click();
   await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
 
+  await page.getByRole('link', { name: 'Budgets' }).first().click();
+  await expect(page).toHaveURL(/\/budgets$/);
   await page.getByRole('button', { name: /refresh spending/i }).click();
   const budget = page.locator('article.budget-card');
   await expect(budget).toContainText('275.000');
   await expect(budget).toContainText('225.000');
 
+  await page.getByRole('link', { name: 'Wallets' }).first().click();
+  await expect(page).toHaveURL(/\/wallets$/);
   const bcaCard = page.locator('article.wallet-card').filter({ hasText: 'BCA Utama' });
   const cashCard = page.locator('article.wallet-card').filter({ hasText: 'Cash Rumah' });
   await expect(bcaCard).toContainText('425.000');
   await expect(cashCard).toContainText('300.000');
   await expect(page.getByText(/Transfers and pending captures excluded/i)).toBeVisible();
 
+  await page.getByRole('link', { name: 'Transactions & Inbox' }).first().click();
+  await expect(page).toHaveURL(/\/transactions$/);
   await page.reload();
   await expect(page.getByRole('heading', { name: householdName })).toBeVisible();
   await expect(page.getByRole('heading', { name: /0 pending review/i })).toBeVisible();
-  await expect(page.locator('article.budget-card')).toContainText('275.000');
   await expect(page.locator('article.activity-row').filter({ hasText: 'Coffee' })).toBeVisible();
   await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Budgets' }).first().click();
+  await expect(page.locator('article.budget-card')).toContainText('275.000');
+  await page.getByRole('link', { name: 'Transactions & Inbox' }).first().click();
 
   await page.route('**/api/**', (route) => route.abort());
   await page.reload();
