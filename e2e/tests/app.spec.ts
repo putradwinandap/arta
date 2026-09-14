@@ -90,6 +90,16 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await page.getByRole('button', { name: /transfer money/i }).click();
   await expect(page.locator('article.activity-row').filter({ hasText: 'Cash allocation' })).toBeVisible();
 
+  await page.getByRole('link', { name: 'Dashboard' }).first().click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { name: /your financial position/i })).toBeVisible();
+  await expect(page.locator('article.summary-card').filter({ hasText: 'Physical' }).first()).toBeVisible();
+  await expect(page.getByText(/0 pending review/i)).toBeVisible();
+  await expect(page.getByText(/budget health/i)).toBeVisible();
+  await expect(page.getByText(/goal progress/i)).toBeVisible();
+  await expect(page.getByRole('link', { name: /manage budgets/i })).toHaveAttribute('href', '/budgets');
+  await expect(page.getByRole('link', { name: /manage goals/i })).toHaveAttribute('href', '/goals');
+
   await page.getByRole('link', { name: 'Budgets' }).first().click();
   await expect(page).toHaveURL(/\/budgets$/);
   await page.getByRole('button', { name: /refresh spending/i }).click();
