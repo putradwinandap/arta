@@ -27,6 +27,7 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 - Browser-selected household state is a UI preference only. Household discovery and authorization come from the authenticated user's persisted server-side memberships.
 - Switching household must update every household-scoped UI surface; no mount may remain pinned to stale browser state from a previous household.
 - CI security coverage must execute against PostgreSQL rather than silently skipping database-backed authorization assertions.
+- CI tool installation retries transient Go module registry failures up to three times before failing, so a temporary checksum/proxy outage is less likely to create a false-negative run.
 - Deterministic formatting, typecheck, web-test, and web-build failures are checked in the cheap CI preflight before expensive PostgreSQL integration and self-hosted E2E jobs.
 - When a CI failure exposes a repeatable local, fixture, or UX-contract problem, identify the root cause and add/update a preventive guard before relying on another remote run. Do not repeatedly burn CI quota on the same known failure.
 - User-facing work follows the vertical-slice rule in `AGENTS.md`.
