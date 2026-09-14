@@ -225,7 +225,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
   }
 
   return (
-    <section className="capture-section">
+    <section id="transactions" className="capture-section">
       <section className="quick-capture-card">
         <div>
           <p className="eyebrow">Quick capture</p>

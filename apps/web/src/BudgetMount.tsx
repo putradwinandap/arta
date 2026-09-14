@@ -25,5 +25,5 @@ export function BudgetMount() {
   }, [householdId]);
 
   if (!householdId) return null;
-  return <main className="app-shell budget-shell"><BudgetPanel householdId={householdId} wallets={wallets} refreshKey={0} /></main>;
+  return <main id="budgets" className="app-shell budget-shell"><BudgetPanel householdId={householdId} wallets={wallets} refreshKey={0} /></main>;
 }

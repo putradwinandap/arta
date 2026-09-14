@@ -1,4 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useState } from 'react';
+import { AppShell } from './AppShell';
 
 type User = { id: string; email: string }; type Mode = 'login' | 'register'; type Props = { children: ReactNode };
 const AUTH_CACHE_KEY = 'arta.authUser';
@@ -11,5 +12,5 @@ export function AuthGate({ children }: Props) {
   async function logout() { setSaving(true); setError(''); try { await authRequest<void>('/api/auth/logout', { method: 'POST' }); setUser(null); localStorage.removeItem(AUTH_CACHE_KEY); localStorage.removeItem(APP_CACHE_KEY); localStorage.removeItem('arta.activeUserId'); localStorage.removeItem('arta.householdId'); } catch (err) { setError(err instanceof Error ? err.message.replaceAll('_', ' ') : 'Logout failed'); } finally { setSaving(false); } }
   if (loading) return <main className="center-state"><p>Opening Arta…</p></main>;
   if (!user) return <main className="onboarding-shell"><section className="onboarding-card"><p className="eyebrow">Arta</p><h1>{mode === 'login' ? 'Welcome back.' : 'Create your Arta account.'}</h1><p className="muted">Your household finance data is protected by your authenticated account and server-verified household membership.</p>{error && <p className="alert" role="alert">{error}</p>}<form onSubmit={submit} className="stack-form"><label>Email<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Password<input type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} value={password} onChange={(event) => setPassword(event.target.value)} required /></label><button type="submit" disabled={saving}>{saving ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}</button></form><button type="button" className="secondary" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}>{mode === 'login' ? 'Need an account? Register' : 'Already have an account? Log in'}</button></section></main>;
-  return <><div className="auth-session-bar"><span>Signed in as <strong>{user.email}</strong>{offline && ' · Offline'}</span><button type="button" className="secondary" onClick={logout} disabled={saving}>Log out</button></div>{error && <p className="alert" role="alert">{error}</p>}{children}</>;
+  return <AppShell email={user.email} offline={offline} onLogout={() => void logout()}><>{error && <p className="alert" role="alert">{error}</p>}{children}</></AppShell>;
 }
