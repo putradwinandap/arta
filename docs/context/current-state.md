@@ -1,10 +1,10 @@
 # Current State
 
-Last updated: 2026-09-12
+Last updated: 2026-09-14
 
 ## Current phase
 
-**Arta is in the authentication, household UX, navigation, and dashboard stabilization phase tracked by Issue #33. Issues #34, #35, and #36 are complete; Issue #37 is the active vertical slice.**
+**Arta is in the authentication, household UX, navigation, dashboard stabilization, and offline recovery phase tracked by Issue #33. Issues #34, #35, and #36 are complete; Issue #37 and Issue #44 are active.**
 
 Arta has the household/wallet foundation, confirmed financial core, capture-first workflow, budgeting, reserved-fund goals, wallet reconciliation, unified household overview, safe household backup/restore, supported self-hosted setup/start, authenticated household authorization, server-backed household discovery after login, and a unified household entry/selection/switching experience.
 
@@ -59,7 +59,10 @@ Issue #9 (Android notification-based transaction capture research) is intentiona
 - Data recovery: versioned household JSON backup/restore with explicit replace semantics and destructive confirmation.
 - Authentication: persisted users with Argon2id password hashes, server-side hashed sessions, register/login/me/logout, authenticated household ownership, authenticated membership discovery, owner-created single-use invites, member join, and server-enforced household membership on household-scoped routes.
 - Household UX: zero-membership users receive one Create/Join entry surface; valid server memberships control activation; one membership is selected automatically; multiple memberships can be switched; create/join remains available through household management.
+- Offline recovery (Issue #44, partial): a previously authenticated browser can restore an offline-authenticated UI state after auth validation cannot reach the server; household, wallet, and overview snapshots are cached for read-only fallback. HTTP 401 remains distinct from network failure. A global offline indicator and reconnect/visibility retry for local captures are implemented. Cache hardening and broader offline scenarios remain outstanding.
 - Security regression coverage: PostgreSQL-backed tests prove cross-household reads/writes are rejected, forbidden writes do not mutate finance state, invite replay is rejected, and logout invalidates the old session. CI has an explicit security integration step so these assertions cannot silently disappear behind an unset database URL.
+- Offline verification: web typecheck, 13 web tests, production PWA build, and Playwright E2E against `http://127.0.0.1:8080` pass. The E2E flow covers login, household setup, financial activity, API interruption, reload, cached activity visibility, offline Quick Capture, reconnect sync, and logout.
+- Offline cache hardening: auth and household snapshots are invalidated on logout, explicit HTTP 401, and authenticated user changes; local captures remain retained when retry receives 401 and are eligible for a later retry after authentication recovery.
 
 ## CI lessons captured during Issue #35
 
@@ -75,6 +78,8 @@ Issue #33 — **Stabilize authentication, household UX, navigation, and dashboar
 The active slice is Issue #37 — **Build responsive Arta app shell and integrate account/session controls**. Issues #35 and #36 are merged and closed.
 
 Issue #9 remains postponed while this stabilization sequence is active.
+
+Issue #44 — **Support offline-authenticated reload and cached household mode** — is active. The initial auth and app snapshot fallback is implemented; the remaining scope is tracked in the Issue.
 
 ## Still to decide / refine
 
@@ -92,4 +97,5 @@ Issue #9 remains postponed while this stabilization sequence is active.
 
 1. Execute Issue #37: build the responsive app shell and integrate account/session controls.
 2. Continue the Issue #33 stabilization sequence with dedicated financial workflow pages, dashboard redesign, and the final responsive/accessibility/UX pass.
-3. Resume Issue #9 only after the stabilization umbrella is sufficiently complete and the source of truth explicitly advances the execution target.
+3. Complete the remaining Issue #44 cache hardening and broader offline E2E scenarios as part of stabilization, without expanding offline writes beyond capture.
+4. Resume Issue #9 only after the stabilization umbrella is sufficiently complete and the source of truth explicitly advances the execution target.

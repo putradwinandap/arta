@@ -55,4 +55,23 @@ describe('App household wallet finance and capture slice', () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => { const path = String(input); if (path === '/api/auth/households') return { ok: true, json: async () => ({ households: [membership] }) } as Response; if (path.endsWith(`/households/${household.id}`)) return { ok: true, json: async () => household } as Response; if (path.endsWith('/wallets/')) return { ok: true, json: async () => ({ wallets: [wallet] }) } as Response; if (path.endsWith('/finance')) return { ok: true, json: async () => overview } as Response; if (path.endsWith('/captures/')) return { ok: true, json: async () => ({ captures: [] }) } as Response; throw new Error(`unexpected fetch ${path}`); }));
     render(<App />); expect(await screen.findByRole('heading', { name: household.name })).toBeInTheDocument(); expect(screen.getByRole('heading', { name: wallet.name })).toBeInTheDocument(); expect(screen.getByText(/1 active wallet/i)).toBeInTheDocument(); expect(screen.getByText('Groceries')).toBeInTheDocument(); expect(await screen.findByRole('heading', { name: /0 pending review/i })).toBeInTheDocument(); await waitFor(() => expect(screen.getByLabelText(/quick capture amount/i)).toBeInTheDocument());
   });
+
+  it('opens the last household snapshot when the server is unreachable', async () => {
+    const wallet = { id: '33333333-3333-4333-8333-333333333333', householdId: household.id, name: 'Cash Offline', type: 'cash', currency: 'IDR', status: 'active' };
+    localStorage.setItem('arta.activeUserId', 'user-1');
+    localStorage.setItem('arta.appSnapshot', JSON.stringify({ userId: 'user-1', memberships: [membership], household, wallets: [wallet], overview: { ...emptyOverview, balances: [{ walletId: wallet.id, amountMinor: 125000, currency: 'IDR' }] }, savedAt: '2026-09-12T10:00:00.000Z' }));
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: household.name })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: wallet.name })).toBeInTheDocument();
+    expect(screen.getByText(/offline mode/i)).toBeInTheDocument();
+  });
+
+  it('does not restore a snapshot belonging to another user', async () => {
+    localStorage.setItem('arta.activeUserId', 'user-2');
+    localStorage.setItem('arta.appSnapshot', JSON.stringify({ userId: 'user-1', memberships: [membership], household, wallets: [], overview: emptyOverview, savedAt: '2026-09-12T10:00:00.000Z' }));
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    render(<App />);
+    await waitFor(() => expect(screen.queryByRole('heading', { name: household.name })).not.toBeInTheDocument());
+  });
 });
