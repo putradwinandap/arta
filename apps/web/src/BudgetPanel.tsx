@@ -41,7 +41,7 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
         <label>Budget amount<input aria-label="Budget amount" type="number" min="1" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} required /></label>
         <button disabled={saving}>{saving ? 'Creating…' : 'Create budget'}</button>
       </form>
-      <div className="budget-list">{items.length === 0 ? <div className="empty-state"><p>No budgets yet.</p></div> : items.map((item) => {
+      <div className="budget-list" aria-live="polite">{items.length === 0 ? <div className="empty-state"><p>No budgets yet.</p></div> : items.map((item) => {
         const ratio = item.amountMinor > 0 ? Math.min(100, Math.round((item.spentMinor / item.amountMinor) * 100)) : 0;
         return <article className="budget-card" key={item.id}><div className="section-heading"><div><strong>{dateOnly(item.periodStart)} → {dateOnly(item.periodEnd)}</strong><p className="muted">{item.currency}</p></div><strong>{ratio}%</strong></div><progress max={item.amountMinor} value={Math.min(item.spentMinor, item.amountMinor)} /><div className="budget-totals"><span>Spent <strong>{formatMoney(item.spentMinor, item.currency)}</strong></span><span>Remaining <strong>{formatMoney(item.remainingMinor, item.currency)}</strong></span><span>Limit <strong>{formatMoney(item.amountMinor, item.currency)}</strong></span></div></article>;
       })}</div>
