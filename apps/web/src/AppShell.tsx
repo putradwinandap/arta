@@ -15,6 +15,11 @@ export function AppShell({ email, offline, onLogout, children }: Props) {
     const timer = window.setInterval(() => setHouseholdName(localStorage.getItem('arta.activeHouseholdName') || 'Active household'), 500);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    const handlePopState = () => setActiveHref(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   function navigate(href: string) { setActiveHref(href); if (href !== window.location.pathname) { window.history.pushState({}, '', href); window.dispatchEvent(new PopStateEvent('popstate')); } }
   function choose(href: string) { navigate(href); setMobileOpen(false); }
   return <div className="app-frame"><aside className="app-sidebar" aria-label="Primary navigation"><div className="brand-lockup"><span className="eyebrow">Arta</span><strong>Household money, remembered.</strong></div><div className="shell-household"><span className="muted">Active household</span><strong>{householdName}</strong><a href="/" onClick={(event) => { event.preventDefault(); navigate('/'); }}>Switch or manage</a></div><nav className="primary-nav">{destinations.map(([label, href]) => <a href={href} key={href} aria-current={activeHref === href ? 'page' : undefined} onClick={(event) => { event.preventDefault(); navigate(href); }}>{label}</a>)}</nav><div className="account-card"><span className="muted">Signed in as</span><strong>{email}</strong>{offline && <span className="offline-label">Offline mode</span>}<button type="button" className="secondary" onClick={onLogout}>Log out</button></div></aside><div className="app-main"><header className="mobile-header"><strong>Arta</strong><button type="button" className="secondary menu-button" aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)}>Menu</button>{mobileOpen && <nav className="mobile-nav">{destinations.map(([label, href]) => <a href={href} key={href} aria-current={activeHref === href ? 'page' : undefined} onClick={(event) => { event.preventDefault(); choose(href); }}>{label}</a>)}<span className="mobile-household">{householdName}</span><button type="button" className="secondary" onClick={onLogout}>Log out</button></nav>}</header>{children}</div></div>;

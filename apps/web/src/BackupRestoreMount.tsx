@@ -4,6 +4,10 @@ type BackupMetadata = { format: string; version: number; householdId: string; ex
 const householdKey = 'arta.householdId';
 
 export function BackupRestoreMount() {
+  useEffect(() => {
+    document.title = 'Family & Settings · Arta';
+    return () => { document.title = 'Arta'; };
+  }, []);
   const [householdId, setHouseholdId] = useState(localStorage.getItem(householdKey) || '');
   const [fileText, setFileText] = useState<string | null>(null);
   const [message, setMessage] = useState('');

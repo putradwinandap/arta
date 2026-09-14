@@ -30,6 +30,8 @@ export function App({ view = 'dashboard' }: { view?: 'dashboard' | 'wallets' | '
   async function handleArchive(walletId: string) { if (!household) return; setSaving(true); setError(''); try { await archiveWallet(household.id, walletId); await refresh(household.id); setEditingWalletId(null); } catch (err) { setError(errorMessage(err)); } finally { setSaving(false); } }
   async function handleTransaction(event: FormEvent) { event.preventDefault(); if (!household) return; setSaving(true); setError(''); try { await createTransaction(household.id, { walletId: transactionWalletId, kind: transactionKind, amountMinor: Number(transactionAmount), note: transactionNote }); await refresh(household.id); setTransactionAmount(''); setTransactionNote(''); } catch (err) { setError(errorMessage(err)); } finally { setSaving(false); } }
   async function handleTransfer(event: FormEvent) { event.preventDefault(); if (!household) return; setSaving(true); setError(''); try { await createTransfer(household.id, { sourceWalletId: transferSourceId, destinationWalletId: transferDestinationId, amountMinor: Number(transferAmount), note: transferNote }); await refresh(household.id); setTransferAmount(''); setTransferNote(''); } catch (err) { setError(errorMessage(err)); } finally { setSaving(false); } }
+  const pageTitle = view === 'wallets' ? 'Wallets' : view === 'transactions' ? 'Transactions & Inbox' : household?.name;
+  useEffect(() => { if (pageTitle) document.title = `${pageTitle} · Arta`; }, [pageTitle]);
 
   if (loading) return <main className="center-state"><p>Opening Arta…</p></main>;
   if (!household) return <main className="onboarding-shell"><HouseholdEntry onActivated={activateHousehold} />{error && <p className="alert" role="alert">{error}</p>}</main>;

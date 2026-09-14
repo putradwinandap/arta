@@ -26,4 +26,13 @@ describe('AppShell', () => {
     fireEvent.click(screen.getAllByRole('link', { name: 'Budgets' }).at(-1)!);
     expect(menu).toHaveAttribute('aria-expanded', 'false');
   });
+
+  it('keeps the active destination in sync with browser history', () => {
+    window.history.pushState({}, '', '/wallets');
+    render(<AppShell email="family@example.com" offline={false} onLogout={vi.fn()}><p>content</p></AppShell>);
+    expect(screen.getByRole('link', { name: 'Wallets' })).toHaveAttribute('aria-current', 'page');
+    window.history.pushState({}, '', '/transactions');
+    fireEvent(window, new PopStateEvent('popstate'));
+    expect(screen.getByRole('link', { name: 'Transactions & Inbox' })).toHaveAttribute('aria-current', 'page');
+  });
 });
