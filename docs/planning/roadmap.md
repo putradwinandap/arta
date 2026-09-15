@@ -41,6 +41,7 @@ Goal: connect spending with household intent.
 
 - Budget model and period tracking
 - Budget progress/remaining amount
+- Explicit expense-to-budget assignment and overlapping budget periods (Issue #50)
 - Financial goals
 - Basic household overview/reporting
 

@@ -55,6 +55,7 @@ func New(pool *pgxpool.Pool) http.Handler {
 				r.Post("/", h.createBudget)
 				r.Get("/", h.listBudgets)
 				r.Get("/{budgetID}", h.getBudget)
+				r.Patch("/{budgetID}", h.updateBudget)
 			})
 			r.Route("/goals", func(r chi.Router) {
 				r.Post("/", h.createGoal)

@@ -68,6 +68,7 @@ func (h financeHandlers) reviewCapture(w http.ResponseWriter, r *http.Request) {
 		Kind        ledger.Kind `json:"kind"`
 		AmountMinor int64       `json:"amountMinor"`
 		Note        string      `json:"note"`
+		BudgetID    string      `json:"budgetId"`
 	}
 	if err := decodeJSON(r, &input); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
@@ -78,7 +79,16 @@ func (h financeHandlers) reviewCapture(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_wallet_id")
 		return
 	}
-	updated, err := h.service.ReviewCapture(r.Context(), householdID, captureID, walletID, input.Kind, input.AmountMinor, input.Note)
+	var budgetID *uuid.UUID
+	if input.BudgetID != "" {
+		parsed, parseErr := uuid.Parse(input.BudgetID)
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid_budget_id")
+			return
+		}
+		budgetID = &parsed
+	}
+	updated, err := h.service.ReviewCapture(r.Context(), householdID, captureID, walletID, input.Kind, input.AmountMinor, input.Note, budgetID)
 	if err != nil {
 		handleFinanceError(w, err)
 		return

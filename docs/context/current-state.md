@@ -18,7 +18,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 - Transfers are explicit transfers, never household income + expense.
 - Monetary calculations use exact integer minor units.
 - Wallet balances are derived rather than stored as mutable truth.
-- Budgets are household-wide per-currency limits over explicit inclusive UTC date periods.
+- MVP budgets are household-wide per-currency limits over explicit inclusive UTC date periods. Issue #50 plans explicit expense assignment so overlapping periods can be supported.
 - Financial goals represent actually reserved wallet funds. Reservations remain household wealth but reduce ordinary available-to-spend funds.
 - Reconciliation compares observed physical balance with trusted ledger state; Arta never silently fabricates activity to hide a discrepancy.
 - Household overview/reporting is derived and does not persist duplicate financial truth.
@@ -97,7 +97,7 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 - Reconciliation UX expansion for linking known missing transactions/transfers and pending Inbox candidates.
 - Future backup migrations/compatibility policy beyond format version 1 and optional encryption at rest for exported files.
 - Richer permission roles beyond the MVP owner/member boundary.
-- Planned budget evolution (Issue #50): support multiple non-overlapping budget periods and optional opt-in auto-renewal. Semantics, cadence, renewal trigger, and conflict behavior remain open decisions; no implementation has started.
+- Budget evolution (Issue #50, partial): budget periods may overlap and confirmed expenses are assignable to at most one same-household, same-currency budget. Unassigned expenses remain valid but do not consume a budget. Monthly opt-in auto-renewal is implemented as an idempotent request-triggered flow; scheduler/background execution, reassignment timing, and richer renewal controls remain open.
 
 ## Next execution steps
 

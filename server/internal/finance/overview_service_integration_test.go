@@ -46,9 +46,12 @@ func TestHouseholdOverviewDerivesTrustedFinancialState(t *testing.T) {
 	savings, _ := service.CreateWallet(ctx, house.ID, "Savings", wallet.TypeBank, "IDR")
 	at := service.now()
 	_, _ = service.CreateTransaction(ctx, house.ID, checking.ID, ledger.KindIncome, 1_000_000, at, "salary")
-	_, _ = service.CreateTransaction(ctx, house.ID, checking.ID, ledger.KindExpense, 100_000, at, "groceries")
 	_, _ = service.CreateTransfer(ctx, house.ID, checking.ID, savings.ID, 200_000, at, "save")
 	budgetSummary, err := service.CreateBudget(ctx, house.ID, "IDR", time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC), 500_000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = service.CreateTransactionWithBudget(ctx, house.ID, checking.ID, ledger.KindExpense, 100_000, at, "groceries", &budgetSummary.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

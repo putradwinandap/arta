@@ -159,6 +159,7 @@ func (h financeHandlers) createTransaction(w http.ResponseWriter, r *http.Reques
 		AmountMinor int64       `json:"amountMinor"`
 		OccurredAt  *time.Time  `json:"occurredAt"`
 		Note        string      `json:"note"`
+		BudgetID    string      `json:"budgetId"`
 	}
 	if err := decodeJSON(r, &input); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
@@ -173,7 +174,16 @@ func (h financeHandlers) createTransaction(w http.ResponseWriter, r *http.Reques
 	if input.OccurredAt != nil {
 		at = *input.OccurredAt
 	}
-	v, err := h.service.CreateTransaction(r.Context(), hID, wID, input.Kind, input.AmountMinor, at, input.Note)
+	var budgetID *uuid.UUID
+	if input.BudgetID != "" {
+		parsed, parseErr := uuid.Parse(input.BudgetID)
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid_budget_id")
+			return
+		}
+		budgetID = &parsed
+	}
+	v, err := h.service.CreateTransactionWithBudget(r.Context(), hID, wID, input.Kind, input.AmountMinor, at, input.Note, budgetID)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
