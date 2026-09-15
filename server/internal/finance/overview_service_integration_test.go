@@ -52,7 +52,9 @@ func TestHouseholdOverviewDerivesTrustedFinancialState(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = service.CreateTransactionWithBudget(ctx, house.ID, checking.ID, ledger.KindExpense, 100_000, at, "groceries", &budgetSummary.ID)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	goalSummary, err := service.CreateGoal(ctx, house.ID, "Emergency", "IDR", 400_000)
 	if err != nil {
 		t.Fatal(err)
