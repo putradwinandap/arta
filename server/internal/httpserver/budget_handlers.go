@@ -11,10 +11,12 @@ func (h financeHandlers) createBudget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input struct {
-		Currency    string `json:"currency"`
-		PeriodStart string `json:"periodStart"`
-		PeriodEnd   string `json:"periodEnd"`
-		AmountMinor int64  `json:"amountMinor"`
+		Currency    string  `json:"currency"`
+		PeriodStart string  `json:"periodStart"`
+		PeriodEnd   string  `json:"periodEnd"`
+		AmountMinor int64   `json:"amountMinor"`
+		AutoRenew   bool    `json:"autoRenew"`
+		Cadence     *string `json:"cadence"`
 	}
 	if err := decodeJSON(r, &input); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
@@ -30,7 +32,7 @@ func (h financeHandlers) createBudget(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_budget_period")
 		return
 	}
-	created, err := h.service.CreateBudget(r.Context(), householdID, input.Currency, start, end, input.AmountMinor)
+	created, err := h.service.CreateBudgetWithRenewal(r.Context(), householdID, input.Currency, start, end, input.AmountMinor, input.AutoRenew, input.Cadence)
 	if err != nil {
 		handleFinanceError(w, err)
 		return
@@ -66,4 +68,29 @@ func (h financeHandlers) getBudget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
+}
+
+func (h financeHandlers) updateBudget(w http.ResponseWriter, r *http.Request) {
+	householdID, ok := pathUUID(w, r, "householdID")
+	if !ok {
+		return
+	}
+	budgetID, ok := pathUUID(w, r, "budgetID")
+	if !ok {
+		return
+	}
+	var input struct {
+		AutoRenew bool    `json:"autoRenew"`
+		Cadence   *string `json:"cadence"`
+	}
+	if err := decodeJSON(r, &input); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+	updated, err := h.service.UpdateBudgetRenewal(r.Context(), householdID, budgetID, input.AutoRenew, input.Cadence)
+	if err != nil {
+		handleFinanceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
 }

@@ -55,10 +55,12 @@ Only confirmed transactions enter the trustworthy financial ledger.
 
 ## Budget usage
 
-1. Household creates a budget for a defined period/scope.
-2. Confirmed eligible expenses are associated with that budget scope.
-3. Arta shows spent and remaining amounts.
-4. Transfers and pending captures do not reduce the spending budget.
+1. Household creates a budget for a defined period.
+2. In the MVP, confirmed eligible expenses consume the applicable budget by household, currency, and date.
+3. In the planned Issue #50 evolution, overlapping budgets are allowed and the member explicitly assigns each confirmed expense to at most one budget.
+4. An expense without a budget remains valid but does not reduce a budget.
+5. Arta shows spent and remaining amounts.
+6. Transfers and pending captures do not reduce the spending budget.
 
 ## Goal tracking
 

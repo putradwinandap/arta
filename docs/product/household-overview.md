@@ -20,7 +20,7 @@ Pending Transaction Inbox captures remain excluded until confirmed. Transfers re
 
 ## Time boundary
 
-A current budget is selected using the server's current UTC calendar date because household timezone semantics are not yet modeled. This follows the existing MVP budget decision.
+A current MVP budget is selected using the server's current UTC calendar date because household timezone semantics are not yet modeled. When Issue #50 is implemented, overview budget totals must use explicit expense-to-budget assignments and must not infer membership from date overlap alone.
 
 ## Empty states
 

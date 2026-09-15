@@ -55,6 +55,7 @@ Status: Early product discovery. Requirements marked **MVP** are intended for th
 ## Budgets
 
 - **MVP:** Users can define a spending budget for a period.
+- **Planned Issue #50:** Users can assign a confirmed expense to at most one same-household, same-currency budget, including when budget periods overlap.
 - **MVP:** Eligible expense transactions reduce available budget.
 - **MVP:** Transfers do not consume a spending budget.
 - Category-based vs envelope-based budgeting requires further product design.

@@ -26,7 +26,7 @@ func (s *Service) CreateCapture(ctx context.Context, id, householdID uuid.UUID, 
 INSERT INTO transaction_captures (id, household_id, amount_minor, note, source, status, captured_at, updated_at)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$7)
 ON CONFLICT (id) DO UPDATE SET id = transaction_captures.id
-RETURNING id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id`, created.ID, created.HouseholdID, created.AmountMinor, created.Note, created.Source, created.Status, created.CapturedAt)
+RETURNING id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id, budget_id`, created.ID, created.HouseholdID, created.AmountMinor, created.Note, created.Source, created.Status, created.CapturedAt)
 	persisted, err := scanCapture(row)
 	if err != nil {
 		return capture.Capture{}, err
@@ -39,7 +39,7 @@ RETURNING id, household_id, wallet_id, kind, amount_minor, note, source, status,
 
 func (s *Service) ListPendingCaptures(ctx context.Context, householdID uuid.UUID) ([]capture.Capture, error) {
 	rows, err := s.pool.Query(ctx, `
-SELECT id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id
+SELECT id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id, budget_id
 FROM transaction_captures
 WHERE household_id = $1 AND status = 'pending'
 ORDER BY captured_at DESC, id DESC`, householdID)
@@ -59,7 +59,7 @@ ORDER BY captured_at DESC, id DESC`, householdID)
 	return items, rows.Err()
 }
 
-func (s *Service) ReviewCapture(ctx context.Context, householdID, captureID, walletID uuid.UUID, kind ledger.Kind, amountMinor int64, note string) (capture.Capture, error) {
+func (s *Service) ReviewCapture(ctx context.Context, householdID, captureID, walletID uuid.UUID, kind ledger.Kind, amountMinor int64, note string, budgetID *uuid.UUID) (capture.Capture, error) {
 	item, err := s.getCapture(ctx, householdID, captureID)
 	if err != nil {
 		return capture.Capture{}, err
@@ -74,12 +74,21 @@ func (s *Service) ReviewCapture(ctx context.Context, householdID, captureID, wal
 	if err := item.Review(walletID, kind, amountMinor, note, s.now()); err != nil {
 		return capture.Capture{}, err
 	}
+	if budgetID != nil {
+		var currency string
+		if err := s.pool.QueryRow(ctx, `SELECT currency FROM budgets WHERE id=$1 AND household_id=$2`, *budgetID, householdID).Scan(&currency); err != nil {
+			return capture.Capture{}, err
+		}
+		if currency != w.Currency {
+			return capture.Capture{}, ledger.ErrCurrencyMismatch
+		}
+	}
 
 	row := s.pool.QueryRow(ctx, `
 UPDATE transaction_captures
-SET wallet_id=$1, kind=$2, amount_minor=$3, note=$4, updated_at=$5
-WHERE id=$6 AND household_id=$7 AND status='pending'
-RETURNING id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id`, walletID, kind, amountMinor, item.Note, item.UpdatedAt, captureID, householdID)
+SET wallet_id=$1, kind=$2, amount_minor=$3, note=$4, updated_at=$5, budget_id=$6
+WHERE id=$7 AND household_id=$8 AND status='pending'
+RETURNING id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id, budget_id`, walletID, kind, amountMinor, item.Note, item.UpdatedAt, budgetID, captureID, householdID)
 	return scanCapture(row)
 }
 
@@ -91,7 +100,7 @@ func (s *Service) ConfirmCapture(ctx context.Context, householdID, captureID uui
 	defer dbtx.Rollback(ctx)
 
 	item, err := scanCapture(dbtx.QueryRow(ctx, `
-SELECT id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id
+SELECT id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id, budget_id
 FROM transaction_captures
 WHERE id=$1 AND household_id=$2
 FOR UPDATE`, captureID, householdID))
@@ -133,7 +142,8 @@ FOR UPDATE`, captureID, householdID))
 	if err != nil {
 		return ledger.Transaction{}, err
 	}
-	if _, err := dbtx.Exec(ctx, `INSERT INTO transactions (id, household_id, wallet_id, kind, amount_minor, currency, occurred_at, note) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, confirmed.ID, confirmed.HouseholdID, confirmed.WalletID, confirmed.Kind, confirmed.AmountMinor, confirmed.Currency, confirmed.OccurredAt, confirmed.Note); err != nil {
+	confirmed.BudgetID = item.BudgetID
+	if _, err := dbtx.Exec(ctx, `INSERT INTO transactions (id, household_id, wallet_id, kind, amount_minor, currency, occurred_at, note, budget_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, confirmed.ID, confirmed.HouseholdID, confirmed.WalletID, confirmed.Kind, confirmed.AmountMinor, confirmed.Currency, confirmed.OccurredAt, confirmed.Note, confirmed.BudgetID); err != nil {
 		return ledger.Transaction{}, err
 	}
 	confirmedAt := s.now().UTC()
@@ -148,7 +158,7 @@ FOR UPDATE`, captureID, householdID))
 
 func (s *Service) getCapture(ctx context.Context, householdID, captureID uuid.UUID) (capture.Capture, error) {
 	return scanCapture(s.pool.QueryRow(ctx, `
-SELECT id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id
+SELECT id, household_id, wallet_id, kind, amount_minor, note, source, status, captured_at, updated_at, confirmed_at, confirmed_transaction_id, budget_id
 FROM transaction_captures
 WHERE id=$1 AND household_id=$2`, captureID, householdID))
 }
@@ -161,10 +171,11 @@ func scanCapture(row rowScanner) (capture.Capture, error) {
 	var item capture.Capture
 	var walletID pgtype.UUID
 	var confirmedTransactionID pgtype.UUID
+	var budgetID pgtype.UUID
 	var kind pgtype.Text
 	var source string
 	var status string
-	if err := row.Scan(&item.ID, &item.HouseholdID, &walletID, &kind, &item.AmountMinor, &item.Note, &source, &status, &item.CapturedAt, &item.UpdatedAt, &item.ConfirmedAt, &confirmedTransactionID); err != nil {
+	if err := row.Scan(&item.ID, &item.HouseholdID, &walletID, &kind, &item.AmountMinor, &item.Note, &source, &status, &item.CapturedAt, &item.UpdatedAt, &item.ConfirmedAt, &confirmedTransactionID, &budgetID); err != nil {
 		return capture.Capture{}, err
 	}
 	if walletID.Valid {
@@ -178,6 +189,10 @@ func scanCapture(row rowScanner) (capture.Capture, error) {
 	if confirmedTransactionID.Valid {
 		parsed := uuid.UUID(confirmedTransactionID.Bytes)
 		item.ConfirmedTransactionID = &parsed
+	}
+	if budgetID.Valid {
+		parsed := uuid.UUID(budgetID.Bytes)
+		item.BudgetID = &parsed
 	}
 	item.Source = capture.Source(source)
 	item.Status = capture.Status(status)

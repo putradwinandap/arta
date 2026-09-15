@@ -192,13 +192,15 @@ Implemented invariants and calculations:
 
 - A budget is household-wide for one currency; category/envelope scope is intentionally not part of the MVP model.
 - Budget amount must be strictly positive and `period_start` must not be after `period_end`.
-- Overlapping budgets for the same household and currency are rejected; different currencies are independent.
+- Overlapping budgets for the same household and currency are rejected in the MVP; Issue #50 supersedes this restriction with explicit expense-to-budget assignment.
 - `spent` is derived only from confirmed `expense` transactions in the same household and currency whose occurrence falls within the period.
 - Income, transfers, out-of-period expenses, cross-currency expenses, and pending captures do not consume the budget.
 - `remaining = amount_minor - spent`; remaining may be negative after overspending.
 - Period boundaries currently use UTC calendar dates until household timezone semantics are modeled explicitly.
 
-The durable domain decision and rationale are recorded in `docs/architecture/decisions/ADR-006-mvp-budget-model.md`; user-facing semantics are summarized in `docs/product/budgeting.md`.
+The durable MVP decision and rationale are recorded in `docs/architecture/decisions/ADR-006-mvp-budget-model.md`; the planned Issue #50 evolution is recorded in `docs/architecture/decisions/ADR-009-overlapping-budgets-and-expense-assignment.md`. User-facing semantics are summarized in `docs/product/budgeting.md`.
+
+Planned Issue #50 extension: confirmed expenses may carry an explicit nullable `budget_id` association to one budget of the same household and currency. Budget `spent` will be derived from those assignments rather than from every expense whose date falls inside the period. Reassignment must remain auditable; splitting one expense across budgets is out of scope.
 
 ## Financial Goal
 

@@ -4,7 +4,9 @@ import {
   confirmCapture,
   createCapture,
   listPendingCaptures,
+  listBudgets,
   reviewCapture,
+  type BudgetSummary,
   type TransactionCapture,
   type TransactionKind,
   type Wallet,
@@ -78,11 +80,15 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
   const [reviewKind, setReviewKind] = useState<TransactionKind>('expense');
   const [reviewAmount, setReviewAmount] = useState('');
   const [reviewNote, setReviewNote] = useState('');
+  const [reviewBudgetId, setReviewBudgetId] = useState('');
+  const [budgets, setBudgets] = useState<BudgetSummary[]>([]);
 
   const walletById = useMemo(() => new Map(wallets.map((wallet) => [wallet.id, wallet])), [wallets]);
 
   const refreshInbox = useCallback(async () => {
-    setCaptures(await listPendingCaptures(householdId));
+    const [nextCaptures, nextBudgets] = await Promise.all([listPendingCaptures(householdId), listBudgets(householdId)]);
+    setCaptures(nextCaptures);
+    setBudgets(nextBudgets);
   }, [householdId]);
 
   const refreshLocalPendingCount = useCallback(async () => {
@@ -183,6 +189,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
     setReviewKind(item.kind || 'expense');
     setReviewAmount(String(item.amountMinor));
     setReviewNote(item.note || '');
+    setReviewBudgetId('');
     setError('');
     setMessage('');
   }
@@ -197,6 +204,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
         kind: reviewKind,
         amountMinor: Number(reviewAmount),
         note: reviewNote,
+        ...(reviewKind === 'expense' && reviewBudgetId ? { budgetId: reviewBudgetId } : {}),
       });
         void refreshInbox().catch((refreshError) => setError(errorMessage(refreshError)));
       setEditingId(null);
@@ -290,6 +298,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
                       <label>Type<select aria-label="Review transaction type" value={reviewKind} onChange={(event) => setReviewKind(event.target.value as TransactionKind)}><option value="expense">Expense</option><option value="income">Income</option></select></label>
                       <label>Wallet<select aria-label="Review wallet" value={reviewWalletId} onChange={(event) => setReviewWalletId(event.target.value)} required><option value="" disabled>Select wallet</option>{wallets.map((entry) => <option value={entry.id} key={entry.id}>{entry.name}</option>)}</select></label>
                       <label>Amount<input aria-label="Review amount" type="number" min="1" step="1" value={reviewAmount} onChange={(event) => setReviewAmount(event.target.value)} required /></label>
+                      {reviewKind === 'expense' && <label>Budget<select aria-label="Review budget" value={reviewBudgetId} onChange={(event) => setReviewBudgetId(event.target.value)}><option value="">No budget</option>{budgets.filter((budget) => budget.currency === walletById.get(reviewWalletId)?.currency).map((budget) => <option value={budget.id} key={budget.id}>{budget.periodStart.slice(0, 10)} → {budget.periodEnd.slice(0, 10)} · {budget.currency}</option>)}</select></label>}
                       <label>Note<input aria-label="Review note" value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} maxLength={240} /></label>
                       <div className="button-row"><button type="submit" disabled={saving}>Save review</button><button type="button" className="secondary" onClick={() => setEditingId(null)}>Cancel</button></div>
                     </form>

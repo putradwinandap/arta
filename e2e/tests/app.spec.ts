@@ -44,6 +44,12 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await page.getByRole('button', { name: /create budget/i }).click();
   await expect(page.locator('article.budget-card')).toContainText('500.000');
   await expect(page.locator('article.budget-card')).toContainText('Spent');
+  const createdBudget = page.locator('article.budget-card').first();
+  await expect(createdBudget).toContainText('Auto-renew off');
+  await createdBudget.getByRole('button', { name: /enable auto-renew/i }).click();
+  await expect(createdBudget).toContainText('Monthly auto-renew on');
+  await createdBudget.getByRole('button', { name: /disable auto-renew/i }).click();
+  await expect(createdBudget).toContainText('Auto-renew off');
 
   await page.getByRole('link', { name: 'Transactions & Inbox' }).first().click();
   await expect(page).toHaveURL(/\/transactions$/);
@@ -65,6 +71,7 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await inboxItem.getByRole('button', { name: 'Review' }).click();
   await page.getByLabel('Review transaction type').selectOption('expense');
   await page.getByLabel('Review wallet').selectOption({ label: 'BCA Utama' });
+  await page.getByLabel('Review budget').selectOption({ index: 1 });
   await page.getByRole('button', { name: /save review/i }).click();
   await inboxItem.getByRole('button', { name: 'Confirm' }).click();
   await expect(page.getByRole('heading', { name: /0 pending review/i })).toBeVisible();
@@ -78,6 +85,7 @@ test('registers, captures, budgets, reviews, and keeps confirmed finance trustwo
   await expect(page.locator('article.activity-row').filter({ hasText: 'Salary' })).toBeVisible();
 
   await page.getByLabel('Transaction type').selectOption('expense');
+  await page.getByLabel('Transaction budget').selectOption({ index: 1 });
   await page.getByLabel('Transaction amount').fill('250000');
   await page.getByLabel('Transaction note').fill('Groceries');
   await page.getByRole('button', { name: /record expense/i }).click();

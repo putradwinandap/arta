@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/putradwinandap/arta/server/internal/budget"
 	"github.com/putradwinandap/arta/server/internal/ledger"
 	"github.com/putradwinandap/arta/server/internal/wallet"
 )
@@ -50,9 +49,15 @@ func TestBudgetCountsOnlyEligibleConfirmedExpenses(t *testing.T) {
 	if created.SpentMinor != 0 || created.RemainingMinor != 500_000 {
 		t.Fatalf("unexpected initial summary: %+v", created)
 	}
-
 	inside := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
-	_, _ = service.CreateTransaction(ctx, house.ID, idr.ID, ledger.KindExpense, 125_000, inside, "eligible")
+	_, err = service.CreateTransactionWithBudget(ctx, house.ID, usd.ID, ledger.KindExpense, 50, inside, "wrong currency", &created.ID)
+	if !errors.Is(err, ledger.ErrCurrencyMismatch) {
+		t.Fatalf("expected cross-currency assignment rejection, got %v", err)
+	}
+	_, err = service.CreateTransactionWithBudget(ctx, house.ID, idr.ID, ledger.KindExpense, 125_000, inside, "eligible", &created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
 	_, _ = service.CreateTransaction(ctx, house.ID, idr.ID, ledger.KindIncome, 900_000, inside, "income")
 	_, _ = service.CreateTransaction(ctx, house.ID, idr.ID, ledger.KindExpense, 75_000, time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), "outside")
 	_, _ = service.CreateTransaction(ctx, house.ID, usd.ID, ledger.KindExpense, 50, inside, "other currency")
@@ -69,7 +74,79 @@ func TestBudgetCountsOnlyEligibleConfirmedExpenses(t *testing.T) {
 	}
 
 	_, err = service.CreateBudget(ctx, house.ID, "IDR", time.Date(2026, 9, 15, 0, 0, 0, 0, time.UTC), time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC), 1)
-	if !errors.Is(err, budget.ErrOverlap) {
-		t.Fatalf("expected overlap error, got %v", err)
+	if err != nil {
+		t.Fatalf("overlapping budgets should be allowed: %v", err)
+	}
+}
+
+func TestBudgetAutoRenewIsIdempotent(t *testing.T) {
+	databaseURL := os.Getenv("ARTA_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("ARTA_DATABASE_URL is required for PostgreSQL integration test")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	service := NewService(pool)
+	house, err := service.CreateHousehold(ctx, "Auto Renew Household", createTestUser(t, pool))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = pool.Exec(ctx, `DELETE FROM budgets WHERE household_id=$1`, house.ID)
+		_, _ = pool.Exec(ctx, `DELETE FROM households WHERE id=$1`, house.ID)
+	})
+	cadence := "monthly"
+	_, err = service.CreateBudgetWithRenewal(ctx, house.ID, "IDR", time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), 250_000, true, &cadence)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := service.ListBudgets(ctx, house.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := service.ListBudgets(ctx, house.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != 2 || len(second) != 2 {
+		t.Fatalf("expected one original and one renewal, got %d and %d", len(first), len(second))
+	}
+}
+
+func TestBudgetRenewalCanBeUpdated(t *testing.T) {
+	databaseURL := os.Getenv("ARTA_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("ARTA_DATABASE_URL is required for PostgreSQL integration test")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	service := NewService(pool)
+	house, err := service.CreateHousehold(ctx, "Update Renewal Household", createTestUser(t, pool))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = pool.Exec(ctx, `DELETE FROM budgets WHERE household_id=$1`, house.ID)
+		_, _ = pool.Exec(ctx, `DELETE FROM households WHERE id=$1`, house.ID)
+	})
+	created, err := service.CreateBudget(ctx, house.ID, "IDR", time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC), 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cadence := "monthly"
+	updated, err := service.UpdateBudgetRenewal(ctx, house.ID, created.ID, true, &cadence)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !updated.AutoRenew || updated.Cadence == nil || *updated.Cadence != cadence {
+		t.Fatalf("unexpected renewal config: %+v", updated)
 	}
 }

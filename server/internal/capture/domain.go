@@ -41,6 +41,7 @@ type Capture struct {
 	UpdatedAt              time.Time    `json:"updatedAt"`
 	ConfirmedAt            *time.Time   `json:"confirmedAt,omitempty"`
 	ConfirmedTransactionID *uuid.UUID   `json:"confirmedTransactionId,omitempty"`
+	BudgetID               *uuid.UUID   `json:"budgetId,omitempty"`
 }
 
 func New(id, householdID uuid.UUID, amountMinor int64, note string, capturedAt time.Time) (Capture, error) {

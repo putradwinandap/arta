@@ -14,15 +14,19 @@ var (
 	ErrInvalidCurrency  = errors.New("invalid_budget_currency")
 	ErrInvalidPeriod    = errors.New("invalid_budget_period")
 	ErrOverlap          = errors.New("budget_period_overlap")
+	ErrInvalidCadence   = errors.New("invalid_budget_cadence")
 )
 
 type Budget struct {
-	ID          uuid.UUID `json:"id"`
-	HouseholdID uuid.UUID `json:"householdId"`
-	Currency    string    `json:"currency"`
-	PeriodStart time.Time `json:"periodStart"`
-	PeriodEnd   time.Time `json:"periodEnd"`
-	AmountMinor int64     `json:"amountMinor"`
+	ID            uuid.UUID  `json:"id"`
+	HouseholdID   uuid.UUID  `json:"householdId"`
+	Currency      string     `json:"currency"`
+	PeriodStart   time.Time  `json:"periodStart"`
+	PeriodEnd     time.Time  `json:"periodEnd"`
+	AmountMinor   int64      `json:"amountMinor"`
+	AutoRenew     bool       `json:"autoRenew"`
+	Cadence       *string    `json:"cadence,omitempty"`
+	RenewedFromID *uuid.UUID `json:"renewedFromId,omitempty"`
 }
 
 type Summary struct {

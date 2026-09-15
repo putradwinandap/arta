@@ -142,6 +142,10 @@ func (s *Service) ArchiveWallet(ctx context.Context, householdID, walletID uuid.
 }
 
 func (s *Service) CreateTransaction(ctx context.Context, householdID, walletID uuid.UUID, kind ledger.Kind, amountMinor int64, occurredAt time.Time, note string) (ledger.Transaction, error) {
+	return s.CreateTransactionWithBudget(ctx, householdID, walletID, kind, amountMinor, occurredAt, note, nil)
+}
+
+func (s *Service) CreateTransactionWithBudget(ctx context.Context, householdID, walletID uuid.UUID, kind ledger.Kind, amountMinor int64, occurredAt time.Time, note string, budgetID *uuid.UUID) (ledger.Transaction, error) {
 	w, err := s.GetWallet(ctx, householdID, walletID)
 	if err != nil {
 		return ledger.Transaction{}, err
@@ -149,11 +153,21 @@ func (s *Service) CreateTransaction(ctx context.Context, householdID, walletID u
 	if w.Status == wallet.StatusArchived {
 		return ledger.Transaction{}, ledger.ErrArchivedWallet
 	}
+	if budgetID != nil {
+		var budgetCurrency string
+		if err := s.pool.QueryRow(ctx, `SELECT currency FROM budgets WHERE id=$1 AND household_id=$2`, *budgetID, householdID).Scan(&budgetCurrency); err != nil {
+			return ledger.Transaction{}, err
+		}
+		if budgetCurrency != w.Currency {
+			return ledger.Transaction{}, ledger.ErrCurrencyMismatch
+		}
+	}
 	tx, err := ledger.NewTransaction(householdID, walletID, kind, amountMinor, w.Currency, occurredAt, note)
 	if err != nil {
 		return ledger.Transaction{}, err
 	}
-	_, err = s.pool.Exec(ctx, `INSERT INTO transactions (id, household_id, wallet_id, kind, amount_minor, currency, occurred_at, note) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, tx.ID, tx.HouseholdID, tx.WalletID, tx.Kind, tx.AmountMinor, tx.Currency, tx.OccurredAt, tx.Note)
+	tx.BudgetID = budgetID
+	_, err = s.pool.Exec(ctx, `INSERT INTO transactions (id, household_id, wallet_id, kind, amount_minor, currency, occurred_at, note, budget_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, tx.ID, tx.HouseholdID, tx.WalletID, tx.Kind, tx.AmountMinor, tx.Currency, tx.OccurredAt, tx.Note, tx.BudgetID)
 	return tx, err
 }
 

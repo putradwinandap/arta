@@ -27,14 +27,15 @@ var (
 )
 
 type Transaction struct {
-	ID          uuid.UUID `json:"id"`
-	HouseholdID uuid.UUID `json:"householdId"`
-	WalletID    uuid.UUID `json:"walletId"`
-	Kind        Kind      `json:"kind"`
-	AmountMinor int64     `json:"amountMinor"`
-	Currency    string    `json:"currency"`
-	OccurredAt  time.Time `json:"occurredAt"`
-	Note        string    `json:"note,omitempty"`
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"householdId"`
+	WalletID    uuid.UUID  `json:"walletId"`
+	Kind        Kind       `json:"kind"`
+	AmountMinor int64      `json:"amountMinor"`
+	Currency    string     `json:"currency"`
+	OccurredAt  time.Time  `json:"occurredAt"`
+	Note        string     `json:"note,omitempty"`
+	BudgetID    *uuid.UUID `json:"budgetId,omitempty"`
 }
 
 type Transfer struct {

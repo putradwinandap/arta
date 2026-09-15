@@ -87,7 +87,7 @@ func TestHouseholdWalletLedgerAndCapturePersistenceFlow(t *testing.T) {
 		t.Fatalf("pending capture must not affect reporting totals: %+v", totalsBeforeConfirm)
 	}
 
-	reviewed, err := service.ReviewCapture(ctx, house.ID, captureID, first.ID, ledger.KindExpense, 25_000, "lunch")
+	reviewed, err := service.ReviewCapture(ctx, house.ID, captureID, first.ID, ledger.KindExpense, 25_000, "lunch", nil)
 	if err != nil {
 		t.Fatalf("ReviewCapture() error = %v", err)
 	}
