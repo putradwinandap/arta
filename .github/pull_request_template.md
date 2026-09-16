@@ -6,6 +6,8 @@
 
 Closes #
 
+<!-- All changes to main must arrive through this pull request. -->
+
 ## Changes
 
 - 

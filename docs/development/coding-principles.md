@@ -57,3 +57,8 @@ These rules apply to the whole codebase. They are pragmatic defaults: preserve c
 - Are domain invariants and authorization still explicit?
 - Could this change silently lose, duplicate, or mutate financial data?
 - Are tests and documentation proportional to the risk?
+
+## Delivery and branch safety
+
+- Never push directly to `main`; use a task-scoped branch and pull request.
+- Merge to `main` only after required CI checks pass and the pull request is reviewed.
