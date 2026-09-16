@@ -18,7 +18,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 - Transfers are explicit transfers, never household income + expense.
 - Monetary calculations use exact integer minor units.
 - Wallet balances are derived rather than stored as mutable truth.
-- MVP budgets are household-wide per-currency limits over explicit inclusive UTC date periods. Issue #50 plans explicit expense assignment so overlapping periods can be supported.
+- MVP budgets are household-wide per-currency limits over explicit inclusive UTC date periods. Issue #50 extends this with overlapping periods and explicit assignment of confirmed expenses to at most one same-household, same-currency budget.
 - Financial goals represent actually reserved wallet funds. Reservations remain household wealth but reduce ordinary available-to-spend funds.
 - Reconciliation compares observed physical balance with trusted ledger state; Arta never silently fabricates activity to hide a discrepancy.
 - Household overview/reporting is derived and does not persist duplicate financial truth.
@@ -49,6 +49,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 - Issue #34 / PR #41: server-authoritative fresh-browser household bootstrap, authenticated membership discovery, safe stale-local-selection fallback, bootstrap regression coverage, and CI fail-fast hardening; squash-merged as `80576ddb9f5c4f2855fea3a164dcc29f5769a684` after CI #147 passed.
 - Issue #35 / PR #42: unified zero-household Create/Join entry, membership refresh after create/join, multi-household selection/switching, and household management access for existing users; merged as `d519d2e` and Issue #35 is closed.
 - Issue #36 / PR #43: owner-only household invitation management UI with token creation, copy interaction, safe states, frontend coverage, and dependency verification; merged as `c335eac` and Issue #36 is closed.
+- Issue #50 / branch `issue-50-budget-evolution`: overlapping budgets, explicit expense-to-budget assignment, capture-time budget selection, and idempotent request-triggered monthly auto-renewal are implemented and the issue is closed. Scheduler/background execution and richer renewal controls remain outside the completed scope.
 - Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`.
 
 ## Current engineering foundation
@@ -78,7 +79,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 
 ## Current execution target
 
-No active execution target is scheduled yet; the stabilization baseline is complete and the next near-term priority should be chosen through roadmap/issue triage.
+The stabilization baseline and the Issue #50 budget-evolution slice are complete. No subsequent execution target is scheduled; the next priority should be chosen through roadmap/issue triage.
 
 Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture** — is complete through Issues #34–#40. Issue #37 — **Build responsive Arta app shell and integrate account/session controls** — is complete and merged via PR #46 (`ad341d4`). Issue #38 — **Separate financial management workflows into dedicated pages** — is complete. Issue #39 — **Redesign Dashboard as a focused household financial overview** — is complete and merged via PR #48. Issue #40 — **Run responsive, accessibility, and UX stabilization pass** — is complete and merged via PR #49.
 
@@ -97,10 +98,10 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 - Reconciliation UX expansion for linking known missing transactions/transfers and pending Inbox candidates.
 - Future backup migrations/compatibility policy beyond format version 1 and optional encryption at rest for exported files.
 - Richer permission roles beyond the MVP owner/member boundary.
-- Budget evolution (Issue #50, partial): budget periods may overlap and confirmed expenses are assignable to at most one same-household, same-currency budget. Unassigned expenses remain valid but do not consume a budget. Monthly opt-in auto-renewal is implemented as an idempotent request-triggered flow; scheduler/background execution, reassignment timing, and richer renewal controls remain open.
+- Budget evolution beyond Issue #50: scheduler/background execution, reassignment timing, richer renewal controls, and any future category/envelope model remain open.
 
 ## Next execution steps
 
 1. Keep the stabilization baseline maintained after Issues #33–#40 completion.
-2. Define the next near-term product target through roadmap/issue triage, with Issue #50 as a planned budget-evolution candidate.
+2. Choose the next near-term product target through roadmap/issue triage; Issue #50 is complete and closed.
 3. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.

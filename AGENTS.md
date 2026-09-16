@@ -42,6 +42,8 @@ Transaction capture should require as little effort as possible. Classification,
 
 ## Required agent workflow
 
+Coding changes must follow `docs/development/coding-principles.md`. Pull requests must complete the repository pull request checklist.
+
 Before starting work:
 
 1. Read this file.
