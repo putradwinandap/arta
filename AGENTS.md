@@ -125,6 +125,8 @@ When an earlier horizontal foundation already exists, the next relevant slice sh
 
 - One Issue should describe one coherent outcome whenever practical.
 - Branches should be task-scoped.
+- Direct pushes to `main` are prohibited. All changes must be merged through a pull request.
+- CI must pass before merging a pull request into `main`.
 - Pull requests should reference their Issue.
 - Do not mix unrelated refactors with feature work.
 - Do not mark work complete solely because code was generated; completion requires verification against acceptance criteria.
