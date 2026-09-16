@@ -1,4 +1,27 @@
-export function TransferForm(p: any) {
+import type { ChangeEvent } from "react";
+import type { TransferFormProps } from "../shared/types";
+
+export function TransferForm(p: TransferFormProps) {
+  const walletOptions = (
+    value: string,
+    onChange: (value: string) => void,
+    label: string,
+  ) => (
+    <label>
+      {label}
+      <select
+        aria-label={`Transfer ${label === "From" ? "source" : "destination"}`}
+        value={value}
+        onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
+      >
+        {p.activeWallets.map((wallet) => (
+          <option key={wallet.id} value={wallet.id}>
+            {wallet.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
   return (
     <section className="panel transfer-panel">
       <p className="eyebrow">Move money</p>
@@ -9,25 +32,8 @@ export function TransferForm(p: any) {
         </div>
       ) : (
         <form className="stack-form" onSubmit={p.handleTransfer}>
-          {[
-            ["source", "From", "transferSourceId", "setTransferSourceId"],
-            ["destination", "To", "transferDestinationId", "setTransferDestinationId"],
-          ].map((x: any) => (
-            <label key={x[0]}>
-              {x[1]}
-              <select
-                aria-label={`Transfer ${x[0]}`}
-                value={p[x[2]]}
-                onChange={(e: any) => p[x[3]](e.target.value)}
-              >
-                {p.activeWallets.map((w: any) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
+          {walletOptions(p.transferSourceId, p.setTransferSourceId, "From")}
+          {walletOptions(p.transferDestinationId, p.setTransferDestinationId, "To")}
           <label>
             Amount
             <input
@@ -36,7 +42,9 @@ export function TransferForm(p: any) {
               min="1"
               step="1"
               value={p.transferAmount}
-              onChange={(e: any) => p.setTransferAmount(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                p.setTransferAmount(e.target.value)
+              }
               required
             />
           </label>
@@ -45,7 +53,9 @@ export function TransferForm(p: any) {
             <input
               aria-label="Transfer note"
               value={p.transferNote}
-              onChange={(e: any) => p.setTransferNote(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                p.setTransferNote(e.target.value)
+              }
               placeholder="Move to savings"
             />
           </label>
