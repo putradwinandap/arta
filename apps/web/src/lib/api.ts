@@ -1,4 +1,5 @@
 export type Household = { id: string; name: string };
+export type User = { id: string; email: string };
 export type HouseholdMembership = Household & { role: string };
 export type HouseholdInvite = {
   token: string;
@@ -124,6 +125,39 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } finally {
     window.clearTimeout(timeout);
   }
+}
+async function requestBlob(path: string): Promise<Blob> {
+  const response = await fetch(path, { credentials: "same-origin" });
+  if (!response.ok) throw new Error("backup_failed");
+  return response.blob();
+}
+export function getCurrentUser() {
+  return request<User>("/api/auth/me");
+}
+export function login(email: string, password: string) {
+  return request<User>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+export function register(email: string, password: string) {
+  return request<User>("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+export function logout() {
+  return request<void>("/api/auth/logout", { method: "POST" });
+}
+export function downloadHouseholdBackup(householdId: string) {
+  return requestBlob(`/api/households/${householdId}/backup`);
+}
+export function restoreHouseholdBackup(householdId: string, body: string) {
+  return request<void>(`/api/households/${householdId}/restore`, {
+    method: "POST",
+    headers: { "X-Arta-Restore-Confirm": "replace" },
+    body,
+  });
 }
 export async function listMyHouseholds() {
   return (await request<{ households: HouseholdMembership[] }>("/api/auth/households"))

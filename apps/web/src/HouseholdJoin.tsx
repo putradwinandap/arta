@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import { joinHousehold } from "./lib/api";
 
 const HOUSEHOLD_STORAGE_KEY = "arta.householdId";
 
@@ -14,21 +15,7 @@ export function HouseholdJoin() {
     setJoining(true);
     setError("");
     try {
-      const response = await fetch("/api/invites/redeem", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token.trim() }),
-      });
-      if (!response.ok) {
-        let message = "Could not join household.";
-        try {
-          const body = (await response.json()) as { error?: string };
-          if (body.error) message = body.error.replaceAll("_", " ");
-        } catch {}
-        throw new Error(message);
-      }
-      const result = (await response.json()) as JoinResult;
+      const result: JoinResult = await joinHousehold(token);
       localStorage.setItem(HOUSEHOLD_STORAGE_KEY, result.householdId);
       window.location.reload();
     } catch (err) {

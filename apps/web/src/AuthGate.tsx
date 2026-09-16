@@ -1,28 +1,17 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { AppShell } from "./AppShell";
+import {
+  getCurrentUser,
+  login,
+  logout as logoutRequest,
+  register,
+  type User,
+} from "./lib/api";
 
-type User = { id: string; email: string };
 type Mode = "login" | "register";
 type Props = { children: ReactNode };
 const AUTH_CACHE_KEY = "arta.authUser";
 const APP_CACHE_KEY = "arta.appSnapshot";
-async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  if (!response.ok) {
-    let code = `http_${response.status}`;
-    try {
-      const body = (await response.json()) as { error?: string };
-      code = body.error || code;
-    } catch {}
-    throw new Error(code);
-  }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
-}
 export function AuthGate({ children }: Props) {
   const [user, setUser] = useState<User | null>(null);
   const [offline, setOffline] = useState(false);
@@ -33,7 +22,7 @@ export function AuthGate({ children }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    authRequest<User>("/api/auth/me")
+    getCurrentUser()
       .then((nextUser) => {
         const cached = JSON.parse(
           localStorage.getItem(AUTH_CACHE_KEY) || "null",
@@ -74,10 +63,10 @@ export function AuthGate({ children }: Props) {
     setSaving(true);
     setError("");
     try {
-      const nextUser = await authRequest<User>(`/api/auth/${mode}`, {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
+      const nextUser =
+        mode === "login"
+          ? await login(email, password)
+          : await register(email, password);
       const cached = JSON.parse(
         localStorage.getItem(AUTH_CACHE_KEY) || "null",
       ) as User | null;
@@ -102,7 +91,7 @@ export function AuthGate({ children }: Props) {
     setSaving(true);
     setError("");
     try {
-      await authRequest<void>("/api/auth/logout", { method: "POST" });
+      await logoutRequest();
       setUser(null);
       localStorage.removeItem(AUTH_CACHE_KEY);
       localStorage.removeItem(APP_CACHE_KEY);

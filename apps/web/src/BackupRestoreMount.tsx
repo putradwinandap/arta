@@ -1,4 +1,5 @@
 import { ChangeEvent, useEffect, useState } from "react";
+import { downloadHouseholdBackup, restoreHouseholdBackup } from "./lib/api";
 
 type BackupMetadata = {
   format: string;
@@ -42,9 +43,7 @@ export function BackupRestoreMount() {
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch(`/api/households/${householdId}/backup`);
-      if (!response.ok) throw new Error("Backup gagal dibuat.");
-      const blob = await response.blob();
+      const blob = await downloadHouseholdBackup(householdId);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -92,18 +91,7 @@ export function BackupRestoreMount() {
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch(`/api/households/${householdId}/restore`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Arta-Restore-Confirm": "replace",
-        },
-        body: fileText,
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || "Restore gagal.");
-      }
+      await restoreHouseholdBackup(householdId, fileText);
       setMessage(
         "Restore berhasil. Muat ulang halaman untuk melihat data yang dipulihkan.",
       );
