@@ -1,4 +1,4 @@
-import { FinancialWorkspace } from '../components/financial/workspace/FinancialWorkspace';
+import { FinancialWorkspace } from "../components/financial/workspace/FinancialWorkspace";
 
 export function DashboardPage() {
   return <FinancialWorkspace view="dashboard" />;

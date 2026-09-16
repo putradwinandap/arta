@@ -29,9 +29,7 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
   );
   const today = new Date();
   const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-  const monthEnd = localDate(
-    new Date(today.getFullYear(), today.getMonth() + 1, 0),
-  );
+  const monthEnd = localDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
   const [items, setItems] = useState<BudgetSummary[]>([]);
   const [currency, setCurrency] = useState(currencies[0] ?? "IDR");
   const [periodStart, setPeriodStart] = useState(monthStart);
@@ -57,8 +55,7 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
     void refresh();
   }, [householdId, refreshKey]);
   useEffect(() => {
-    if (currencies.length && !currencies.includes(currency))
-      setCurrency(currencies[0]);
+    if (currencies.length && !currencies.includes(currency)) setCurrency(currencies[0]);
   }, [currencies, currency]);
 
   async function submit(event: FormEvent) {
@@ -89,10 +86,23 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
   }
 
   async function toggleRenewal(item: BudgetSummary) {
-    setSaving(true); setError("");
-    try { await updateBudgetRenewal(householdId, item.id, { autoRenew: !item.autoRenew, ...(item.autoRenew ? {} : { cadence: "monthly" }) }); await refresh(); }
-    catch (err) { setError(err instanceof Error ? err.message.replaceAll("_", " ") : "Could not update auto-renew."); }
-    finally { setSaving(false); }
+    setSaving(true);
+    setError("");
+    try {
+      await updateBudgetRenewal(householdId, item.id, {
+        autoRenew: !item.autoRenew,
+        ...(item.autoRenew ? {} : { cadence: "monthly" }),
+      });
+      await refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message.replaceAll("_", " ")
+          : "Could not update auto-renew.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -102,15 +112,11 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
           <p className="eyebrow">Spending budget</p>
           <h2>Plan a period, then track confirmed spending.</h2>
           <p className="muted">
-            Only confirmed expenses in the same currency and period count.
-            Transfers and pending captures stay outside the budget.
+            Only confirmed expenses in the same currency and period count. Transfers and
+            pending captures stay outside the budget.
           </p>
         </div>
-        <button
-          className="secondary"
-          type="button"
-          onClick={() => void refresh()}
-        >
+        <button className="secondary" type="button" onClick={() => void refresh()}>
           Refresh spending
         </button>
       </div>
@@ -166,11 +172,15 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
             />
           </label>
           <label>
-            <input aria-label="Auto-renew budget" type="checkbox" checked={autoRenew} onChange={(event) => setAutoRenew(event.target.checked)} /> Auto-renew monthly
+            <input
+              aria-label="Auto-renew budget"
+              type="checkbox"
+              checked={autoRenew}
+              onChange={(event) => setAutoRenew(event.target.checked)}
+            />{" "}
+            Auto-renew monthly
           </label>
-          <button disabled={saving}>
-            {saving ? "Creating…" : "Create budget"}
-          </button>
+          <button disabled={saving}>{saving ? "Creating…" : "Create budget"}</button>
         </form>
         <div className="budget-list" aria-live="polite">
           {items.length === 0 ? (
@@ -191,10 +201,12 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
                   <div className="section-heading">
                     <div>
                       <strong>
-                        {dateOnly(item.periodStart)} →{" "}
-                        {dateOnly(item.periodEnd)}
+                        {dateOnly(item.periodStart)} → {dateOnly(item.periodEnd)}
                       </strong>
-                      <p className="muted">{item.currency} · {item.autoRenew ? "Monthly auto-renew on" : "Auto-renew off"}</p>
+                      <p className="muted">
+                        {item.currency} ·{" "}
+                        {item.autoRenew ? "Monthly auto-renew on" : "Auto-renew off"}
+                      </p>
                     </div>
                     <strong>{ratio}%</strong>
                   </div>
@@ -205,24 +217,25 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
                   <div className="budget-totals">
                     <span>
                       Spent{" "}
-                      <strong>
-                        {formatMoney(item.spentMinor, item.currency)}
-                      </strong>
+                      <strong>{formatMoney(item.spentMinor, item.currency)}</strong>
                     </span>
                     <span>
                       Remaining{" "}
-                      <strong>
-                        {formatMoney(item.remainingMinor, item.currency)}
-                      </strong>
+                      <strong>{formatMoney(item.remainingMinor, item.currency)}</strong>
                     </span>
                     <span>
                       Limit{" "}
-                      <strong>
-                        {formatMoney(item.amountMinor, item.currency)}
-                      </strong>
+                      <strong>{formatMoney(item.amountMinor, item.currency)}</strong>
                     </span>
                   </div>
-                  <button className="secondary" type="button" disabled={saving} onClick={() => void toggleRenewal(item)}>{item.autoRenew ? "Disable auto-renew" : "Enable auto-renew"}</button>
+                  <button
+                    className="secondary"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void toggleRenewal(item)}
+                  >
+                    {item.autoRenew ? "Disable auto-renew" : "Enable auto-renew"}
+                  </button>
                 </article>
               );
             })

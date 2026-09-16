@@ -126,9 +126,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 export async function listMyHouseholds() {
-  return (
-    await request<{ households: HouseholdMembership[] }>("/api/auth/households")
-  ).households;
+  return (await request<{ households: HouseholdMembership[] }>("/api/auth/households"))
+    .households;
 }
 export function createHouseholdInvite(h: string) {
   return request<HouseholdInvite>(`/api/households/${h}/invites`, {
@@ -228,9 +227,7 @@ export function createCapture(
 }
 export async function listPendingCaptures(h: string) {
   return (
-    await request<{ captures: TransactionCapture[] }>(
-      `/api/households/${h}/captures/`,
-    )
+    await request<{ captures: TransactionCapture[] }>(`/api/households/${h}/captures/`)
   ).captures;
 }
 export function reviewCapture(
@@ -271,15 +268,21 @@ export function createBudget(
   });
 }
 export async function listBudgets(h: string) {
-  return (
-    await request<{ budgets: BudgetSummary[] }>(`/api/households/${h}/budgets/`)
-  ).budgets;
+  return (await request<{ budgets: BudgetSummary[] }>(`/api/households/${h}/budgets/`))
+    .budgets;
 }
 export function getBudget(h: string, b: string) {
   return request<BudgetSummary>(`/api/households/${h}/budgets/${b}`);
 }
-export function updateBudgetRenewal(h: string, b: string, input: { autoRenew: boolean; cadence?: string }) {
-  return request<BudgetSummary>(`/api/households/${h}/budgets/${b}`, { method: "PATCH", body: JSON.stringify(input) });
+export function updateBudgetRenewal(
+  h: string,
+  b: string,
+  input: { autoRenew: boolean; cadence?: string },
+) {
+  return request<BudgetSummary>(`/api/households/${h}/budgets/${b}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }
 export function createGoal(
   h: string,
@@ -291,9 +294,7 @@ export function createGoal(
   });
 }
 export async function listGoals(h: string) {
-  return (
-    await request<{ goals: GoalSummary[] }>(`/api/households/${h}/goals/`)
-  ).goals;
+  return (await request<{ goals: GoalSummary[] }>(`/api/households/${h}/goals/`)).goals;
 }
 export function updateGoal(
   h: string,
@@ -335,10 +336,10 @@ export function createReconciliation(
   w: string,
   input: { observedAmountMinor: number },
 ) {
-  return request<Reconciliation>(
-    `/api/households/${h}/wallets/${w}/reconcile`,
-    { method: "POST", body: JSON.stringify(input) },
-  );
+  return request<Reconciliation>(`/api/households/${h}/wallets/${w}/reconcile`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 export async function listReconciliations(h: string) {
   return (
@@ -347,13 +348,9 @@ export async function listReconciliations(h: string) {
     )
   ).reconciliations;
 }
-export function adjustReconciliation(
-  h: string,
-  r: string,
-  input: { reason: string },
-) {
-  return request<Reconciliation>(
-    `/api/households/${h}/reconciliations/${r}/adjust`,
-    { method: "POST", body: JSON.stringify(input) },
-  );
+export function adjustReconciliation(h: string, r: string, input: { reason: string }) {
+  return request<Reconciliation>(`/api/households/${h}/reconciliations/${r}/adjust`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }

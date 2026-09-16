@@ -26,6 +26,7 @@ jobs:
             exit 1
           fi
       - run: npm install
+      - run: npm run format:check:web
       - run: npm run typecheck:web
       - run: npm run test:web
       - run: npm run build:web

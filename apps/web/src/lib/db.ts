@@ -1,4 +1,4 @@
-import Dexie, { type EntityTable } from 'dexie';
+import Dexie, { type EntityTable } from "dexie";
 
 export type LocalCapture = {
   id: string;
@@ -6,19 +6,19 @@ export type LocalCapture = {
   amountMinor: number;
   note: string;
   capturedAt: string;
-  syncStatus: 'pending' | 'failed';
+  syncStatus: "pending" | "failed";
 };
 
 class ArtaLocalDatabase extends Dexie {
-  captures!: EntityTable<LocalCapture, 'id'>;
+  captures!: EntityTable<LocalCapture, "id">;
 
   constructor() {
-    super('arta');
+    super("arta");
     this.version(1).stores({
-      captures: 'id, createdAt, syncStatus'
+      captures: "id, createdAt, syncStatus",
     });
     this.version(2).stores({
-      captures: 'id, householdId, capturedAt, syncStatus'
+      captures: "id, householdId, capturedAt, syncStatus",
     });
   }
 }

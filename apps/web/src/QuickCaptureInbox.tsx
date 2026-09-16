@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   confirmCapture,
@@ -10,8 +10,8 @@ import {
   type TransactionCapture,
   type TransactionKind,
   type Wallet,
-} from './lib/api';
-import { localDb, type LocalCapture } from './lib/db';
+} from "./lib/api";
+import { localDb, type LocalCapture } from "./lib/db";
 
 type Props = {
   householdId: string;
@@ -20,13 +20,13 @@ type Props = {
 };
 
 function errorMessage(error: unknown) {
-  if (!(error instanceof Error)) return 'Something went wrong. Please try again.';
-  return error.message.replaceAll('_', ' ');
+  if (!(error instanceof Error)) return "Something went wrong. Please try again.";
+  return error.message.replaceAll("_", " ");
 }
 
-function formatMoney(amountMinor: number, currency = 'IDR') {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
+function formatMoney(amountMinor: number, currency = "IDR") {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
     currency,
     maximumFractionDigits: 0,
   }).format(amountMinor);
@@ -46,19 +46,22 @@ function isUnauthenticated(error: unknown) {
 }
 
 function createCaptureId() {
-  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 async function withCaptureTimeout<T>(stage: string, operation: Promise<T>) {
   let timeoutId: number | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(`capture_${stage}_timeout`)), 5000);
+    timeoutId = window.setTimeout(
+      () => reject(new Error(`capture_${stage}_timeout`)),
+      5000,
+    );
   });
   try {
     return await Promise.race([operation, timeout]);
@@ -69,35 +72,47 @@ async function withCaptureTimeout<T>(stage: string, operation: Promise<T>) {
 
 export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) {
   const [captures, setCaptures] = useState<TransactionCapture[]>([]);
-  const [amount, setAmount] = useState('');
-  const [note, setNote] = useState('');
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [localPendingCount, setLocalPendingCount] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [reviewWalletId, setReviewWalletId] = useState('');
-  const [reviewKind, setReviewKind] = useState<TransactionKind>('expense');
-  const [reviewAmount, setReviewAmount] = useState('');
-  const [reviewNote, setReviewNote] = useState('');
-  const [reviewBudgetId, setReviewBudgetId] = useState('');
+  const [reviewWalletId, setReviewWalletId] = useState("");
+  const [reviewKind, setReviewKind] = useState<TransactionKind>("expense");
+  const [reviewAmount, setReviewAmount] = useState("");
+  const [reviewNote, setReviewNote] = useState("");
+  const [reviewBudgetId, setReviewBudgetId] = useState("");
   const [budgets, setBudgets] = useState<BudgetSummary[]>([]);
 
-  const walletById = useMemo(() => new Map(wallets.map((wallet) => [wallet.id, wallet])), [wallets]);
+  const walletById = useMemo(
+    () => new Map(wallets.map((wallet) => [wallet.id, wallet])),
+    [wallets],
+  );
 
   const refreshInbox = useCallback(async () => {
-    const [nextCaptures, nextBudgets] = await Promise.all([listPendingCaptures(householdId), listBudgets(householdId)]);
+    const [nextCaptures, nextBudgets] = await Promise.all([
+      listPendingCaptures(householdId),
+      listBudgets(householdId),
+    ]);
     setCaptures(nextCaptures);
     setBudgets(nextBudgets);
   }, [householdId]);
 
   const refreshLocalPendingCount = useCallback(async () => {
-    const count = await localDb.captures.where('householdId').equals(householdId).count();
+    const count = await localDb.captures
+      .where("householdId")
+      .equals(householdId)
+      .count();
     setLocalPendingCount(count);
   }, [householdId]);
 
   const syncLocalCaptures = useCallback(async () => {
-    const localCaptures = await localDb.captures.where('householdId').equals(householdId).toArray();
+    const localCaptures = await localDb.captures
+      .where("householdId")
+      .equals(householdId)
+      .toArray();
     let syncedAny = false;
     for (const item of localCaptures) {
       try {
@@ -106,7 +121,7 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
         syncedAny = true;
       } catch (error) {
         if (isUnauthenticated(error)) return;
-        await localDb.captures.update(item.id, { syncStatus: 'failed' });
+        await localDb.captures.update(item.id, { syncStatus: "failed" });
       }
     }
     await refreshLocalPendingCount();
@@ -114,69 +129,99 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
   }, [householdId, refreshInbox, refreshLocalPendingCount]);
 
   useEffect(() => {
-    void Promise.all([refreshInbox(), refreshLocalPendingCount()]).catch((err) => setError(errorMessage(err)));
+    void Promise.all([refreshInbox(), refreshLocalPendingCount()]).catch((err) =>
+      setError(errorMessage(err)),
+    );
     void syncLocalCaptures();
 
     function handleOnline() {
       void syncLocalCaptures();
     }
     function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') void syncLocalCaptures();
+      if (document.visibilityState === "visible") void syncLocalCaptures();
     }
-    window.addEventListener('online', handleOnline);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => { window.removeEventListener('online', handleOnline); document.removeEventListener('visibilitychange', handleVisibilityChange); };
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [refreshInbox, refreshLocalPendingCount, syncLocalCaptures]);
 
   async function handleQuickCapture(event: FormEvent) {
     event.preventDefault();
     const amountMinor = Number(amount);
     if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
-      setError('Amount must be a positive whole number.');
+      setError("Amount must be a positive whole number.");
       return;
     }
 
     setSaving(true);
-    setError('');
-    setMessage('');
+    setError("");
+    setMessage("");
     const localCapture: LocalCapture = {
       id: createCaptureId(),
       householdId,
       amountMinor,
       note: note.trim(),
       capturedAt: new Date().toISOString(),
-      syncStatus: 'pending',
+      syncStatus: "pending",
     };
 
     try {
       if (!navigator.onLine) {
-        console.info('[quick-capture] offline; indexeddb.put:start', { id: localCapture.id, householdId });
-        await withCaptureTimeout('indexeddb_put', localDb.captures.put(localCapture));
-        console.info('[quick-capture] offline; indexeddb.put:complete', { id: localCapture.id });
+        console.info("[quick-capture] offline; indexeddb.put:start", {
+          id: localCapture.id,
+          householdId,
+        });
+        await withCaptureTimeout("indexeddb_put", localDb.captures.put(localCapture));
+        console.info("[quick-capture] offline; indexeddb.put:complete", {
+          id: localCapture.id,
+        });
         await refreshLocalPendingCount();
-        setMessage('Saved on this device. Arta will retry when the server is reachable.');
-        setAmount('');
-        setNote('');
+        setMessage(
+          "Saved on this device. Arta will retry when the server is reachable.",
+        );
+        setAmount("");
+        setNote("");
         return;
       }
       try {
-        console.info('[quick-capture] api.post:start', { id: localCapture.id, householdId });
-        await withCaptureTimeout('api_post', createCapture(householdId, captureApiPayload(localCapture)));
-        console.info('[quick-capture] api.post:complete', { id: localCapture.id });
-        void refreshInbox().catch((refreshError) => setError(errorMessage(refreshError)));
-        setMessage('Captured. You can classify it later.');
+        console.info("[quick-capture] api.post:start", {
+          id: localCapture.id,
+          householdId,
+        });
+        await withCaptureTimeout(
+          "api_post",
+          createCapture(householdId, captureApiPayload(localCapture)),
+        );
+        console.info("[quick-capture] api.post:complete", { id: localCapture.id });
+        void refreshInbox().catch((refreshError) =>
+          setError(errorMessage(refreshError)),
+        );
+        setMessage("Captured. You can classify it later.");
       } catch (error) {
-        console.error('[quick-capture] api.post:failed', error);
-        console.info('[quick-capture] fallback indexeddb.put:start', { id: localCapture.id, householdId });
-        await withCaptureTimeout('fallback_indexeddb_put', localDb.captures.put({ ...localCapture, syncStatus: 'failed' }));
-        console.info('[quick-capture] fallback indexeddb.put:complete', { id: localCapture.id });
-        setMessage('Saved on this device. Arta will retry when the server is reachable.');
+        console.error("[quick-capture] api.post:failed", error);
+        console.info("[quick-capture] fallback indexeddb.put:start", {
+          id: localCapture.id,
+          householdId,
+        });
+        await withCaptureTimeout(
+          "fallback_indexeddb_put",
+          localDb.captures.put({ ...localCapture, syncStatus: "failed" }),
+        );
+        console.info("[quick-capture] fallback indexeddb.put:complete", {
+          id: localCapture.id,
+        });
+        setMessage(
+          "Saved on this device. Arta will retry when the server is reachable.",
+        );
       }
       await refreshLocalPendingCount();
-      setAmount('');
-      setNote('');
+      setAmount("");
+      setNote("");
     } catch (err) {
-      console.error('[quick-capture] failed-before-api', err);
+      console.error("[quick-capture] failed-before-api", err);
       setError(errorMessage(err));
     } finally {
       setSaving(false);
@@ -185,30 +230,32 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
 
   function beginReview(item: TransactionCapture) {
     setEditingId(item.id);
-    setReviewWalletId(item.walletId || wallets[0]?.id || '');
-    setReviewKind(item.kind || 'expense');
+    setReviewWalletId(item.walletId || wallets[0]?.id || "");
+    setReviewKind(item.kind || "expense");
     setReviewAmount(String(item.amountMinor));
-    setReviewNote(item.note || '');
-    setReviewBudgetId('');
-    setError('');
-    setMessage('');
+    setReviewNote(item.note || "");
+    setReviewBudgetId("");
+    setError("");
+    setMessage("");
   }
 
   async function handleSaveReview(event: FormEvent, captureId: string) {
     event.preventDefault();
     setSaving(true);
-    setError('');
+    setError("");
     try {
       await reviewCapture(householdId, captureId, {
         walletId: reviewWalletId,
         kind: reviewKind,
         amountMinor: Number(reviewAmount),
         note: reviewNote,
-        ...(reviewKind === 'expense' && reviewBudgetId ? { budgetId: reviewBudgetId } : {}),
+        ...(reviewKind === "expense" && reviewBudgetId
+          ? { budgetId: reviewBudgetId }
+          : {}),
       });
-        void refreshInbox().catch((refreshError) => setError(errorMessage(refreshError)));
+      void refreshInbox().catch((refreshError) => setError(errorMessage(refreshError)));
       setEditingId(null);
-      setMessage('Review saved. Ready to confirm.');
+      setMessage("Review saved. Ready to confirm.");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -218,13 +265,13 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
 
   async function handleConfirm(captureId: string) {
     setSaving(true);
-    setError('');
-    setMessage('');
+    setError("");
+    setMessage("");
     try {
       await confirmCapture(householdId, captureId);
       await Promise.all([refreshInbox(), onConfirmed()]);
       setEditingId(null);
-      setMessage('Confirmed and added to the financial ledger.');
+      setMessage("Confirmed and added to the financial ledger.");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -238,7 +285,9 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
         <div>
           <p className="eyebrow">Quick capture</p>
           <h2>Capture now. Classify later.</h2>
-          <p className="muted">Only the amount is required. Wallet and transaction type can wait.</p>
+          <p className="muted">
+            Only the amount is required. Wallet and transaction type can wait.
+          </p>
         </div>
         <form className="quick-capture-form" onSubmit={handleQuickCapture}>
           <label>
@@ -265,12 +314,25 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
               maxLength={240}
             />
           </label>
-          <button type="submit" disabled={saving}>{saving ? 'Capturing…' : 'Capture'}</button>
+          <button type="submit" disabled={saving}>
+            {saving ? "Capturing…" : "Capture"}
+          </button>
         </form>
-        {message && <p className="capture-message" role="status">{message}</p>}
-        {error && <p className="alert" role="alert">{error}</p>}
+        {message && (
+          <p className="capture-message" role="status">
+            {message}
+          </p>
+        )}
+        {error && (
+          <p className="alert" role="alert">
+            {error}
+          </p>
+        )}
         {localPendingCount > 0 && (
-          <p className="offline-note">{localPendingCount} capture{localPendingCount === 1 ? '' : 's'} safely waiting on this device for server sync.</p>
+          <p className="offline-note">
+            {localPendingCount} capture{localPendingCount === 1 ? "" : "s"} safely
+            waiting on this device for server sync.
+          </p>
         )}
       </section>
 
@@ -282,10 +344,18 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
           </div>
           <span className="summary-chip">Pending ≠ reporting</span>
         </div>
-        <p className="muted">Pending captures do not affect wallet balances, income, expense, or future budget reporting until confirmed.</p>
+        <p className="muted">
+          Pending captures do not affect wallet balances, income, expense, or future
+          budget reporting until confirmed.
+        </p>
 
         {captures.length === 0 ? (
-          <div className="empty-state"><p>Inbox clear. Quick captures will wait here until you classify and confirm them.</p></div>
+          <div className="empty-state">
+            <p>
+              Inbox clear. Quick captures will wait here until you classify and confirm
+              them.
+            </p>
+          </div>
         ) : (
           <div className="inbox-list">
             {captures.map((item) => {
@@ -294,24 +364,128 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
               return (
                 <article className="inbox-item" key={item.id}>
                   {editingId === item.id ? (
-                    <form className="review-form" onSubmit={(event) => handleSaveReview(event, item.id)}>
-                      <label>Type<select aria-label="Review transaction type" value={reviewKind} onChange={(event) => setReviewKind(event.target.value as TransactionKind)}><option value="expense">Expense</option><option value="income">Income</option></select></label>
-                      <label>Wallet<select aria-label="Review wallet" value={reviewWalletId} onChange={(event) => setReviewWalletId(event.target.value)} required><option value="" disabled>Select wallet</option>{wallets.map((entry) => <option value={entry.id} key={entry.id}>{entry.name}</option>)}</select></label>
-                      <label>Amount<input aria-label="Review amount" type="number" min="1" step="1" value={reviewAmount} onChange={(event) => setReviewAmount(event.target.value)} required /></label>
-                      {reviewKind === 'expense' && <label>Budget<select aria-label="Review budget" value={reviewBudgetId} onChange={(event) => setReviewBudgetId(event.target.value)}><option value="">No budget</option>{budgets.filter((budget) => budget.currency === walletById.get(reviewWalletId)?.currency).map((budget) => <option value={budget.id} key={budget.id}>{budget.periodStart.slice(0, 10)} → {budget.periodEnd.slice(0, 10)} · {budget.currency}</option>)}</select></label>}
-                      <label>Note<input aria-label="Review note" value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} maxLength={240} /></label>
-                      <div className="button-row"><button type="submit" disabled={saving}>Save review</button><button type="button" className="secondary" onClick={() => setEditingId(null)}>Cancel</button></div>
+                    <form
+                      className="review-form"
+                      onSubmit={(event) => handleSaveReview(event, item.id)}
+                    >
+                      <label>
+                        Type
+                        <select
+                          aria-label="Review transaction type"
+                          value={reviewKind}
+                          onChange={(event) =>
+                            setReviewKind(event.target.value as TransactionKind)
+                          }
+                        >
+                          <option value="expense">Expense</option>
+                          <option value="income">Income</option>
+                        </select>
+                      </label>
+                      <label>
+                        Wallet
+                        <select
+                          aria-label="Review wallet"
+                          value={reviewWalletId}
+                          onChange={(event) => setReviewWalletId(event.target.value)}
+                          required
+                        >
+                          <option value="" disabled>
+                            Select wallet
+                          </option>
+                          {wallets.map((entry) => (
+                            <option value={entry.id} key={entry.id}>
+                              {entry.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Amount
+                        <input
+                          aria-label="Review amount"
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={reviewAmount}
+                          onChange={(event) => setReviewAmount(event.target.value)}
+                          required
+                        />
+                      </label>
+                      {reviewKind === "expense" && (
+                        <label>
+                          Budget
+                          <select
+                            aria-label="Review budget"
+                            value={reviewBudgetId}
+                            onChange={(event) => setReviewBudgetId(event.target.value)}
+                          >
+                            <option value="">No budget</option>
+                            {budgets
+                              .filter(
+                                (budget) =>
+                                  budget.currency ===
+                                  walletById.get(reviewWalletId)?.currency,
+                              )
+                              .map((budget) => (
+                                <option value={budget.id} key={budget.id}>
+                                  {budget.periodStart.slice(0, 10)} →{" "}
+                                  {budget.periodEnd.slice(0, 10)} · {budget.currency}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                      )}
+                      <label>
+                        Note
+                        <input
+                          aria-label="Review note"
+                          value={reviewNote}
+                          onChange={(event) => setReviewNote(event.target.value)}
+                          maxLength={240}
+                        />
+                      </label>
+                      <div className="button-row">
+                        <button type="submit" disabled={saving}>
+                          Save review
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => setEditingId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </form>
                   ) : (
                     <>
                       <div className="inbox-copy">
-                        <strong>{formatMoney(item.amountMinor, wallet?.currency || 'IDR')}</strong>
-                        <p>{item.note || 'No note'}</p>
-                        <small>{ready ? `${item.kind} · ${wallet?.name}` : 'Needs classification'} · captured {new Date(item.capturedAt).toLocaleString()}</small>
+                        <strong>
+                          {formatMoney(item.amountMinor, wallet?.currency || "IDR")}
+                        </strong>
+                        <p>{item.note || "No note"}</p>
+                        <small>
+                          {ready
+                            ? `${item.kind} · ${wallet?.name}`
+                            : "Needs classification"}{" "}
+                          · captured {new Date(item.capturedAt).toLocaleString()}
+                        </small>
                       </div>
                       <div className="wallet-actions">
-                        <button type="button" className="secondary" onClick={() => beginReview(item)}>Review</button>
-                        <button type="button" disabled={!ready || saving} onClick={() => handleConfirm(item.id)}>Confirm</button>
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => beginReview(item)}
+                        >
+                          Review
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!ready || saving}
+                          onClick={() => handleConfirm(item.id)}
+                        >
+                          Confirm
+                        </button>
                       </div>
                     </>
                   )}

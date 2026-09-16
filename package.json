@@ -5,6 +5,8 @@
   "scripts": {
     "dev:web": "npm --workspace @arta/web run dev",
     "build:web": "npm --workspace @arta/web run build",
+    "format:web": "npm --workspace @arta/web run format",
+    "format:check:web": "npm --workspace @arta/web run format:check",
     "test:web": "npm --workspace @arta/web run test",
     "typecheck:web": "npm --workspace @arta/web run typecheck",
     "test:e2e": "npm --workspace @arta/e2e run test"

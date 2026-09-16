@@ -1,1 +1,1 @@
-export { DashboardPage, WalletsPage, TransactionsPage } from './pages/FinancialPages';
+export { DashboardPage, WalletsPage, TransactionsPage } from "./pages/FinancialPages";
