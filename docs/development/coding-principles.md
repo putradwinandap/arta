@@ -61,4 +61,4 @@ These rules apply to the whole codebase. They are pragmatic defaults: preserve c
 ## Delivery and branch safety
 
 - Never push directly to `main`; use a task-scoped branch and pull request.
-- Merge to `main` only after required CI checks pass and the pull request is reviewed.
+- Merge to `main` only after required CI checks pass. Obtain review when another maintainer is available.
