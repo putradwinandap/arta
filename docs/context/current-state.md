@@ -79,7 +79,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 
 ## Current execution target
 
-The stabilization baseline and the Issue #50 budget-evolution slice are complete. No subsequent execution target is scheduled; the next priority should be chosen through roadmap/issue triage.
+The stabilization baseline and the Issue #50 budget-evolution slice are complete. The next engineering target is the frontend maintainability work tracked by Issues #55–#62: typed component boundaries, focused decomposition of oversized frontend modules, centralized API access, shared money formatting, and preventive CI checks.
 
 Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture** — is complete through Issues #34–#40. Issue #37 — **Build responsive Arta app shell and integrate account/session controls** — is complete and merged via PR #46 (`ad341d4`). Issue #38 — **Separate financial management workflows into dedicated pages** — is complete. Issue #39 — **Redesign Dashboard as a focused household financial overview** — is complete and merged via PR #48. Issue #40 — **Run responsive, accessibility, and UX stabilization pass** — is complete and merged via PR #49.
 
@@ -103,5 +103,6 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 ## Next execution steps
 
 1. Keep the stabilization baseline maintained after Issues #33–#40 completion.
-2. Choose the next near-term product target through roadmap/issue triage; Issue #50 is complete and closed.
-3. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.
+2. Execute frontend maintainability Issues #55–#62 incrementally through scoped PRs; Issue #50 is complete and closed.
+3. Choose the next product target through roadmap/issue triage after the maintainability work is complete or reprioritized.
+4. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.

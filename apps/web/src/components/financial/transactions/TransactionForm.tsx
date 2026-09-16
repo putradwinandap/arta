@@ -1,5 +1,11 @@
-import { FormEvent } from "react";
-export function TransactionForm(p: any) {
+import type { ChangeEvent } from "react";
+import type { TransactionKind } from "../../../lib/api";
+import type { TransactionFormProps } from "../shared/types";
+
+export function TransactionForm(p: TransactionFormProps) {
+  const walletCurrency = p.activeWallets.find(
+    (w) => w.id === p.transactionWalletId,
+  )?.currency;
   return (
     <section className="panel transaction-panel">
       <p className="eyebrow">Record confirmed money</p>
@@ -11,17 +17,14 @@ export function TransactionForm(p: any) {
             <select
               aria-label="Transaction budget"
               value={p.transactionBudgetId}
-              onChange={(e: any) => p.setTransactionBudgetId(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                p.setTransactionBudgetId(e.target.value)
+              }
             >
               <option value="">No budget</option>
               {p.budgets
-                .filter(
-                  (b: any) =>
-                    b.currency ===
-                    p.activeWallets.find((w: any) => w.id === p.transactionWalletId)
-                      ?.currency,
-                )
-                .map((b: any) => (
+                .filter((b) => b.currency === walletCurrency)
+                .map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.periodStart.slice(0, 10)} → {b.periodEnd.slice(0, 10)} ·{" "}
                     {b.currency}
@@ -35,7 +38,9 @@ export function TransactionForm(p: any) {
           <select
             aria-label="Transaction type"
             value={p.transactionKind}
-            onChange={(e: any) => p.setTransactionKind(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              p.setTransactionKind(e.target.value as TransactionKind)
+            }
           >
             <option value="expense">Expense</option>
             <option value="income">Income</option>
@@ -46,9 +51,11 @@ export function TransactionForm(p: any) {
           <select
             aria-label="Transaction wallet"
             value={p.transactionWalletId}
-            onChange={(e: any) => p.setTransactionWalletId(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              p.setTransactionWalletId(e.target.value)
+            }
           >
-            {p.activeWallets.map((w: any) => (
+            {p.activeWallets.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name}
               </option>
@@ -63,7 +70,9 @@ export function TransactionForm(p: any) {
             min="1"
             step="1"
             value={p.transactionAmount}
-            onChange={(e: any) => p.setTransactionAmount(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              p.setTransactionAmount(e.target.value)
+            }
             required
           />
         </label>
@@ -72,7 +81,9 @@ export function TransactionForm(p: any) {
           <input
             aria-label="Transaction note"
             value={p.transactionNote}
-            onChange={(e: any) => p.setTransactionNote(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              p.setTransactionNote(e.target.value)
+            }
             placeholder="Groceries"
           />
         </label>

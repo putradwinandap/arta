@@ -306,6 +306,7 @@ export function useFinancialWorkspace() {
   };
   return {
     budgets,
+    transactionBudgetId,
     setTransactionBudgetId,
     memberships,
     household,
