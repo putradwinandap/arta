@@ -1,0 +1,1 @@
+export { FinancialWorkspace } from "../../../FinancialWorkspace";
