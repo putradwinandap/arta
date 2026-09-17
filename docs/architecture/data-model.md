@@ -226,3 +226,24 @@ Implemented reservation event attributes:
 Goal progress is derived as reserves minus releases. Reservations are tied to a real source wallet of the same currency. They do not change physical wallet balance, household income/expense totals, transfers, or budget spending. Wallet `reserved` is the sum of active reservation history sourced from that wallet, and `available = physical balance - reserved`. New reservations cannot exceed available funds, preventing the same money from backing multiple goals. Releases cannot exceed the amount reserved by that goal from that wallet. Archiving does not silently release money.
 
 The durable decision is recorded in `docs/architecture/decisions/ADR-007-reserved-fund-financial-goals.md`; product semantics are in `docs/product/financial-goals.md`.
+
+## Reconciliation
+
+`reconciliations` records an observed wallet balance and compares it with the
+trusted ledger balance at the time of checking.
+
+Implemented attributes:
+
+- `id`, `household_id`, `wallet_id`
+- `expected_amount_minor` — derived trusted balance at reconciliation time
+- `observed_amount_minor` — physical balance entered by the user
+- `discrepancy_minor` — observed minus expected amount
+- `currency`
+- `status` — `unresolved` or `adjusted`
+- `reason` — explicit explanation for an adjustment when the historical cause cannot be reconstructed
+- `created_at`, `adjusted_at`
+
+Reconciliation never fabricates or silently rewrites historical financial
+activity. A known missing transaction or transfer should be recorded through
+the normal financial workflow. An explicit adjustment records only the
+unexplained remainder and preserves the original discrepancy for auditability.
