@@ -154,7 +154,7 @@ Logical modules will grow around real behavior:
 - Budgets
 - Goals
 - Reporting
-- Reconciliation (future)
+- Reconciliation
 - Capture integrations (future)
 
 These are domain boundaries, not separately deployed services.
@@ -211,4 +211,4 @@ PWA-first does not mean browser-only forever. A future Android client or compani
 - `ADR-004-mvp-technical-architecture.md`
 - `ADR-005-database-migrations-with-goose.md`
 
-Current implementation work is tracked by Issue #2 and PR #10.
+Current implementation work and delivery status are tracked in `docs/context/current-state.md` and GitHub Issues/PRs.
