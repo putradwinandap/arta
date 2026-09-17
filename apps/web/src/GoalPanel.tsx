@@ -8,12 +8,7 @@ import {
   reserveGoal,
   Wallet,
 } from "./lib/api";
-const money = (n: number, c: string) =>
-  new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: c,
-    maximumFractionDigits: 0,
-  }).format(n);
+import { formatMoney } from "./components/financial/shared/currency";
 export function GoalPanel({
   householdId,
   wallets,
@@ -146,11 +141,11 @@ function GoalCard({
         <span>{goal.status}</span>
       </div>
       <p>
-        {money(goal.reservedMinor, goal.currency)} reserved of{" "}
-        {money(goal.targetAmountMinor, goal.currency)} · {pct}%
+        {formatMoney(goal.reservedMinor, goal.currency)} reserved of{" "}
+        {formatMoney(goal.targetAmountMinor, goal.currency)} · {pct}%
       </p>
       <p>
-        <strong>{money(goal.remainingMinor, goal.currency)}</strong> remaining
+        <strong>{formatMoney(goal.remainingMinor, goal.currency)}</strong> remaining
       </p>
       <progress
         max={goal.targetAmountMinor}

@@ -6,15 +6,9 @@ import {
   type BudgetSummary,
   type Wallet,
 } from "./lib/api";
+import { formatMoney } from "./components/financial/shared/currency";
 
 type Props = { householdId: string; wallets: Wallet[]; refreshKey: number };
-function formatMoney(amountMinor: number, currency: string) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amountMinor);
-}
 function dateOnly(value: string) {
   return value.slice(0, 10);
 }

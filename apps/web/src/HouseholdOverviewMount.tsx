@@ -9,13 +9,7 @@ import {
   type TransactionCapture,
   type Wallet,
 } from "./lib/api";
-
-const money = (value: number, currency: string) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
+import { formatMoney } from "./components/financial/shared/currency";
 
 export function HouseholdOverviewMount() {
   const [householdId, setHouseholdId] = useState(
@@ -127,11 +121,14 @@ export function HouseholdOverview({ householdId }: { householdId: string }) {
               <span>
                 {names.get(balance.walletId) ?? "Wallet"} · {balance.currency}
               </span>
-              <strong>{money(balance.amountMinor, balance.currency)}</strong>
+              <strong>{formatMoney(balance.amountMinor, balance.currency)}</strong>
               <small>
                 Physical · Reserved{" "}
-                {money(balance.reservedMinor ?? 0, balance.currency)} · Available{" "}
-                {money(balance.availableMinor ?? balance.amountMinor, balance.currency)}
+                {formatMoney(balance.reservedMinor ?? 0, balance.currency)} · Available{" "}
+                {formatMoney(
+                  balance.availableMinor ?? balance.amountMinor,
+                  balance.currency,
+                )}
               </small>
             </article>
           ))}
@@ -187,10 +184,12 @@ export function HouseholdOverview({ householdId }: { householdId: string }) {
               <article className="card" key={budget.id}>
                 <strong>{budget.currency} budget</strong>
                 <p>
-                  {money(budget.spentMinor, budget.currency)} spent of{" "}
-                  {money(budget.amountMinor, budget.currency)}
+                  {formatMoney(budget.spentMinor, budget.currency)} spent of{" "}
+                  {formatMoney(budget.amountMinor, budget.currency)}
                 </p>
-                <small>{money(budget.remainingMinor, budget.currency)} remaining</small>
+                <small>
+                  {formatMoney(budget.remainingMinor, budget.currency)} remaining
+                </small>
               </article>
             ))
           )}
@@ -213,10 +212,12 @@ export function HouseholdOverview({ householdId }: { householdId: string }) {
               <article className="card" key={goal.id}>
                 <strong>{goal.name}</strong>
                 <p>
-                  {money(goal.reservedMinor, goal.currency)} reserved of{" "}
-                  {money(goal.targetAmountMinor, goal.currency)}
+                  {formatMoney(goal.reservedMinor, goal.currency)} reserved of{" "}
+                  {formatMoney(goal.targetAmountMinor, goal.currency)}
                 </p>
-                <small>{money(goal.remainingMinor, goal.currency)} remaining</small>
+                <small>
+                  {formatMoney(goal.remainingMinor, goal.currency)} remaining
+                </small>
               </article>
             ))
           )}
@@ -252,7 +253,7 @@ export function HouseholdOverview({ householdId }: { householdId: string }) {
                 </div>
                 <strong>
                   {item.type === "expense" ? "-" : ""}
-                  {money(item.amountMinor, item.currency)}
+                  {formatMoney(item.amountMinor, item.currency)}
                 </strong>
               </article>
             ))}
