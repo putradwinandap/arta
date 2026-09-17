@@ -50,6 +50,12 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 - Issue #35 / PR #42: unified zero-household Create/Join entry, membership refresh after create/join, multi-household selection/switching, and household management access for existing users; merged as `d519d2e` and Issue #35 is closed.
 - Issue #36 / PR #43: owner-only household invitation management UI with token creation, copy interaction, safe states, frontend coverage, and dependency verification; merged as `c335eac` and Issue #36 is closed.
 - Issue #50 / branch `issue-50-budget-evolution`: overlapping budgets, explicit expense-to-budget assignment, capture-time budget selection, and idempotent request-triggered monthly auto-renewal are implemented and the issue is closed. Scheduler/background execution and richer renewal controls remain outside the completed scope.
+- Issue #55 / PR #63: typed financial component boundaries, merged and closed.
+- Issue #56 / PR #66: centralized money formatting and frontend audit, merged and closed.
+- Issue #57 / PR #67: Quick Capture Inbox decomposition into focused form, outbox, and formatting modules, merged and closed.
+- Issue #58 / PR #68: reconciliation and financial goals decomposition into focused forms, lists/cards, actions, and hooks, merged and closed.
+- Issue #60 / PR #64: FinancialWorkspace orchestration split, merged and closed.
+- Issue #62 / PR #65: centralized auth, backup, and household-join API access, merged and closed.
 - Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`.
 
 ## Current engineering foundation
@@ -63,7 +69,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 - Household UX: zero-membership users receive one Create/Join entry surface; valid server memberships control activation; one membership is selected automatically; multiple memberships can be switched; create/join remains available through household management.
 - Offline recovery (Issue #44, complete): a previously authenticated browser can restore an offline-authenticated UI state after auth validation cannot reach the server; household, wallet, and overview snapshots are cached for read-only fallback. HTTP 401 remains distinct from network failure. A global offline indicator, reconnect/visibility retry for local captures, cache invalidation, user/household isolation, and session-expiry capture safety are implemented.
 - Security regression coverage: PostgreSQL-backed tests prove cross-household reads/writes are rejected, forbidden writes do not mutate finance state, invite replay is rejected, and logout invalidates the old session. CI has an explicit security integration step so these assertions cannot silently disappear behind an unset database URL.
-- Offline verification: web typecheck, 19 web tests, production PWA build, and Playwright E2E against `http://127.0.0.1:8080` pass. The E2E flow covers login, household setup, financial activity, API interruption, reload, cached activity visibility, offline Quick Capture, reconnect sync, and logout.
+- Offline verification: web typecheck, 22 web tests, production PWA build, and Playwright E2E against `http://127.0.0.1:8080` pass. The E2E flow covers login, household setup, financial activity, API interruption, reload, cached activity visibility, offline Quick Capture, reconnect sync, and logout.
 - Offline cache hardening: auth and household snapshots are invalidated on logout, explicit HTTP 401, and authenticated user changes; snapshots carry the active user ID; local captures remain retained when retry receives 401 and are eligible for a later retry after authentication recovery.
 - Responsive app shell (Issue #37, PR #46, merged `ad341d4`): desktop sidebar and mobile menu now expose account/session controls, active household context, logout, and scoped destinations for dashboard, transactions, wallets, budgets, goals, reconciliation, and family/settings. Navigation controls preserve native keyboard/focus behavior, and representative desktop/mobile shell tests plus full E2E coverage are green.
 - Dedicated financial workflow pages (Issue #38): Transactions & Inbox, Wallets, Budgets, Financial Goals, Reconciliation, and Family & Settings have clear routes and scoped surfaces. Dashboard no longer presents unrelated management forms; route titles and browser history state remain synchronized. Existing create/manage/review actions and responsive shell behavior remain covered by frontend and E2E verification.
@@ -79,7 +85,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 
 ## Current execution target
 
-The stabilization baseline and the Issue #50 budget-evolution slice are complete. Frontend maintainability is now in progress: Issues #55, #56, #57, #60, and #62 are Done, while Issues #58, #59, and #61 remain Missing. The current execution target is Issue #58, followed by the remaining maintainability Issues incrementally.
+The stabilization baseline and the Issue #50 budget-evolution slice are complete. Frontend maintainability is now in progress: Issues #55, #56, #57, #58, #60, and #62 are Done, while Issues #59 and #61 remain Missing. The current execution target is Issue #59, followed by Issue #61.
 
 Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture** — is complete through Issues #34–#40. Issue #37 — **Build responsive Arta app shell and integrate account/session controls** — is complete and merged via PR #46 (`ad341d4`). Issue #38 — **Separate financial management workflows into dedicated pages** — is complete. Issue #39 — **Redesign Dashboard as a focused household financial overview** — is complete and merged via PR #48. Issue #40 — **Run responsive, accessibility, and UX stabilization pass** — is complete and merged via PR #49.
 
@@ -103,6 +109,6 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 ## Next execution steps
 
 1. Keep the stabilization baseline maintained after Issues #33–#40 completion.
-2. Execute Issues #58, #59, and #61 through scoped PRs; Issues #55, #56, #57, #60, and #62 are Done.
+2. Execute Issues #59 and #61 through scoped PRs; Issues #55, #56, #57, #58, #60, and #62 are Done.
 3. Reconcile this status after each maintainability slice and choose the next product target through roadmap/issue triage afterward.
 4. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.
