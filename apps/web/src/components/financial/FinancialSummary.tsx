@@ -1,12 +1,5 @@
 import type { FinanceOverview, Wallet } from "../../lib/api";
-
-function formatMoney(amountMinor: number, currency = "IDR") {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amountMinor);
-}
+import { formatMoney } from "./shared/currency";
 
 export function FinancialSummary({ overview }: { overview: FinanceOverview }) {
   return (

@@ -9,9 +9,7 @@ import {
   Wallet,
   WalletBalance,
 } from "./lib/api";
-
-const money = (n: number, c: string) =>
-  new Intl.NumberFormat(undefined, { style: "currency", currency: c }).format(n / 100);
+import { formatMoney } from "./components/financial/shared/currency";
 
 export function ReconciliationMount() {
   const [householdId, setHouseholdId] = useState(
@@ -151,8 +149,8 @@ function ReconciliationPanel({ householdId }: { householdId: string }) {
           </form>
           {selected && balance && (
             <p className="muted">
-              Arta currently expects {money(balance.amountMinor, selected.currency)}{" "}
-              physical balance.
+              Arta currently expects{" "}
+              {formatMoney(balance.amountMinor, selected.currency)} physical balance.
             </p>
           )}
           {error && (
@@ -178,12 +176,12 @@ function ReconciliationPanel({ householdId }: { householdId: string }) {
                     · {item.status}
                   </strong>
                   <p>
-                    Expected {money(item.expectedAmountMinor, item.currency)} · observed{" "}
-                    {money(item.observedAmountMinor, item.currency)}
+                    Expected {formatMoney(item.expectedAmountMinor, item.currency)} ·
+                    observed {formatMoney(item.observedAmountMinor, item.currency)}
                   </p>
                   <p>
                     Original discrepancy{" "}
-                    <strong>{money(item.discrepancyMinor, item.currency)}</strong>
+                    <strong>{formatMoney(item.discrepancyMinor, item.currency)}</strong>
                   </p>
                   {item.status === "unresolved" && (
                     <div>

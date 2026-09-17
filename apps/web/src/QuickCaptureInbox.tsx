@@ -12,6 +12,7 @@ import {
   type Wallet,
 } from "./lib/api";
 import { localDb, type LocalCapture } from "./lib/db";
+import { formatMoney } from "./components/financial/shared/currency";
 
 type Props = {
   householdId: string;
@@ -22,14 +23,6 @@ type Props = {
 function errorMessage(error: unknown) {
   if (!(error instanceof Error)) return "Something went wrong. Please try again.";
   return error.message.replaceAll("_", " ");
-}
-
-function formatMoney(amountMinor: number, currency = "IDR") {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amountMinor);
 }
 
 function captureApiPayload(item: LocalCapture) {

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { TransactionKind, Wallet, WalletType } from "../../../lib/api";
 import { useFinancialWorkspaceActions } from "./useFinancialWorkspaceActions";
 import { useFinancialWorkspaceData } from "./useFinancialWorkspaceData";
+export { formatMoney } from "../shared/currency";
 
 export const walletTypes: Array<{ value: WalletType; label: string }> = [
   { value: "cash", label: "Cash" },
@@ -14,14 +15,6 @@ export function errorMessage(error: unknown) {
     ? error.message.replaceAll("_", " ")
     : "Something went wrong. Please try again.";
 }
-export function formatMoney(amountMinor: number, currency = "IDR") {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amountMinor);
-}
-
 export function useFinancialWorkspace() {
   const data = useFinancialWorkspaceData();
   const actions = useFinancialWorkspaceActions(data);
