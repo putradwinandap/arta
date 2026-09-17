@@ -13,55 +13,20 @@ import {
 } from "./lib/api";
 import { localDb, type LocalCapture } from "./lib/db";
 import { formatMoney } from "./components/financial/shared/currency";
+import {
+  captureApiPayload,
+  createCaptureId,
+  errorMessage,
+  withCaptureTimeout,
+} from "./components/capture/captureFormatters";
+import { useCaptureOutbox } from "./components/capture/useCaptureOutbox";
+import { QuickCaptureForm } from "./components/capture/QuickCaptureForm";
 
 type Props = {
   householdId: string;
   wallets: Wallet[];
   onConfirmed: () => Promise<void>;
 };
-
-function errorMessage(error: unknown) {
-  if (!(error instanceof Error)) return "Something went wrong. Please try again.";
-  return error.message.replaceAll("_", " ");
-}
-
-function captureApiPayload(item: LocalCapture) {
-  return {
-    id: item.id,
-    amountMinor: item.amountMinor,
-    note: item.note,
-    capturedAt: item.capturedAt,
-  };
-}
-
-function isUnauthenticated(error: unknown) {
-  return error instanceof Error && /^(unauthenticated|http_401)$/.test(error.message);
-}
-
-function createCaptureId() {
-  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-async function withCaptureTimeout<T>(stage: string, operation: Promise<T>) {
-  let timeoutId: number | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = window.setTimeout(
-      () => reject(new Error(`capture_${stage}_timeout`)),
-      5000,
-    );
-  });
-  try {
-    return await Promise.race([operation, timeout]);
-  } finally {
-    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-  }
-}
 
 export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) {
   const [captures, setCaptures] = useState<TransactionCapture[]>([]);
@@ -70,7 +35,6 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [localPendingCount, setLocalPendingCount] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [reviewWalletId, setReviewWalletId] = useState("");
   const [reviewKind, setReviewKind] = useState<TransactionKind>("expense");
@@ -93,53 +57,15 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
     setBudgets(nextBudgets);
   }, [householdId]);
 
-  const refreshLocalPendingCount = useCallback(async () => {
-    const count = await localDb.captures
-      .where("householdId")
-      .equals(householdId)
-      .count();
-    setLocalPendingCount(count);
-  }, [householdId]);
-
-  const syncLocalCaptures = useCallback(async () => {
-    const localCaptures = await localDb.captures
-      .where("householdId")
-      .equals(householdId)
-      .toArray();
-    let syncedAny = false;
-    for (const item of localCaptures) {
-      try {
-        await createCapture(householdId, captureApiPayload(item));
-        await localDb.captures.delete(item.id);
-        syncedAny = true;
-      } catch (error) {
-        if (isUnauthenticated(error)) return;
-        await localDb.captures.update(item.id, { syncStatus: "failed" });
-      }
-    }
-    await refreshLocalPendingCount();
-    if (syncedAny) await refreshInbox();
-  }, [householdId, refreshInbox, refreshLocalPendingCount]);
+  const { localPendingCount, refreshLocalPendingCount } = useCaptureOutbox(
+    householdId,
+    refreshInbox,
+    (err) => setError(errorMessage(err)),
+  );
 
   useEffect(() => {
-    void Promise.all([refreshInbox(), refreshLocalPendingCount()]).catch((err) =>
-      setError(errorMessage(err)),
-    );
-    void syncLocalCaptures();
-
-    function handleOnline() {
-      void syncLocalCaptures();
-    }
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") void syncLocalCaptures();
-    }
-    window.addEventListener("online", handleOnline);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [refreshInbox, refreshLocalPendingCount, syncLocalCaptures]);
+    void refreshInbox().catch((err) => setError(errorMessage(err)));
+  }, [refreshInbox]);
 
   async function handleQuickCapture(event: FormEvent) {
     event.preventDefault();
@@ -274,60 +200,17 @@ export function QuickCaptureInbox({ householdId, wallets, onConfirmed }: Props) 
 
   return (
     <section id="transactions" className="capture-section">
-      <section className="quick-capture-card">
-        <div>
-          <p className="eyebrow">Quick capture</p>
-          <h2>Capture now. Classify later.</h2>
-          <p className="muted">
-            Only the amount is required. Wallet and transaction type can wait.
-          </p>
-        </div>
-        <form className="quick-capture-form" onSubmit={handleQuickCapture}>
-          <label>
-            Amount
-            <input
-              aria-label="Quick capture amount"
-              inputMode="numeric"
-              type="number"
-              min="1"
-              step="1"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              placeholder="25000"
-              required
-            />
-          </label>
-          <label>
-            Note <span className="optional">optional</span>
-            <input
-              aria-label="Quick capture note"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="Lunch"
-              maxLength={240}
-            />
-          </label>
-          <button type="submit" disabled={saving}>
-            {saving ? "Capturing…" : "Capture"}
-          </button>
-        </form>
-        {message && (
-          <p className="capture-message" role="status">
-            {message}
-          </p>
-        )}
-        {error && (
-          <p className="alert" role="alert">
-            {error}
-          </p>
-        )}
-        {localPendingCount > 0 && (
-          <p className="offline-note">
-            {localPendingCount} capture{localPendingCount === 1 ? "" : "s"} safely
-            waiting on this device for server sync.
-          </p>
-        )}
-      </section>
+      <QuickCaptureForm
+        amount={amount}
+        note={note}
+        saving={saving}
+        message={message}
+        error={error}
+        localPendingCount={localPendingCount}
+        onSubmit={handleQuickCapture}
+        onAmountChange={setAmount}
+        onNoteChange={setNote}
+      />
 
       <section className="panel inbox-panel">
         <div className="section-heading">
