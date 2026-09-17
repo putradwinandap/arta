@@ -79,7 +79,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 
 ## Current execution target
 
-The stabilization baseline and the Issue #50 budget-evolution slice are complete. Frontend maintainability is now in progress: Issues #55 and #60 are Done, Issue #62 is Partial through PR #65, Issue #56 is In Progress, and Issues #57–#59 and #61 remain Missing. The current execution target is Issue #56, followed by the remaining maintainability Issues incrementally.
+The stabilization baseline and the Issue #50 budget-evolution slice are complete. Frontend maintainability is now in progress: Issues #55, #56, and #60 are Done, Issue #62 is Partial through PR #65, Issue #57 is In Progress, and Issues #58, #59, and #61 remain Missing. The current execution target is Issue #57, followed by the remaining maintainability Issues incrementally.
 
 Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture** — is complete through Issues #34–#40. Issue #37 — **Build responsive Arta app shell and integrate account/session controls** — is complete and merged via PR #46 (`ad341d4`). Issue #38 — **Separate financial management workflows into dedicated pages** — is complete. Issue #39 — **Redesign Dashboard as a focused household financial overview** — is complete and merged via PR #48. Issue #40 — **Run responsive, accessibility, and UX stabilization pass** — is complete and merged via PR #49.
 
@@ -103,6 +103,6 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 ## Next execution steps
 
 1. Keep the stabilization baseline maintained after Issues #33–#40 completion.
-2. Complete the Issue #56 frontend money-formatting/audit slice, then execute Issues #57–#59 and #61 through scoped PRs; Issues #55 and #60 are Done and Issue #62 remains Partial through PR #65.
+2. Complete the Issue #57 Quick Capture Inbox decomposition, then execute Issues #58, #59, and #61 through scoped PRs; Issues #55, #56, and #60 are Done and Issue #62 remains Partial through PR #65.
 3. Reconcile this status after each maintainability slice and choose the next product target through roadmap/issue triage afterward.
 4. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.
