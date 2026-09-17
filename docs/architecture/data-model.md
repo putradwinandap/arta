@@ -229,7 +229,7 @@ The durable decision is recorded in `docs/architecture/decisions/ADR-007-reserve
 
 ## Reconciliation
 
-`reconciliations` records an observed wallet balance and compares it with the
+`wallet_reconciliations` records an observed wallet balance and compares it with the
 trusted ledger balance at the time of checking.
 
 Implemented attributes:
@@ -239,9 +239,14 @@ Implemented attributes:
 - `observed_amount_minor` — physical balance entered by the user
 - `discrepancy_minor` — observed minus expected amount
 - `currency`
-- `status` — `unresolved` or `adjusted`
-- `reason` — explicit explanation for an adjustment when the historical cause cannot be reconstructed
-- `created_at`, `adjusted_at`
+- `status` — `unresolved` or `reconciled`
+- `adjustment_id` — optional reference to the balance adjustment created when a remainder is explicitly resolved
+- `observed_at`, `resolved_at`
+
+`balance_adjustments` stores an explicit unexplained remainder when a reconciliation is resolved:
+
+- `id`, `household_id`, `wallet_id`
+- `amount_minor`, `currency`, `reason`, `created_at`
 
 Reconciliation never fabricates or silently rewrites historical financial
 activity. A known missing transaction or transfer should be recorded through
