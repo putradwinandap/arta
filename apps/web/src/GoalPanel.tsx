@@ -1,14 +1,8 @@
-import { FormEvent, useEffect, useState } from "react";
-import {
-  archiveGoal,
-  createGoal,
-  GoalSummary,
-  listGoals,
-  releaseGoal,
-  reserveGoal,
-  Wallet,
-} from "./lib/api";
-import { formatMoney } from "./components/financial/shared/currency";
+import { FormEvent, useState } from "react";
+import type { Wallet } from "./lib/api";
+import { GoalCard } from "./components/goals/GoalCard";
+import { GoalForm } from "./components/goals/GoalForm";
+import { useGoals } from "./components/goals/useGoals";
 export function GoalPanel({
   householdId,
   wallets,
@@ -16,32 +10,20 @@ export function GoalPanel({
   householdId: string;
   wallets: Wallet[];
 }) {
-  const [goals, setGoals] = useState<GoalSummary[]>([]);
-  const [error, setError] = useState("");
+  const state = useGoals(householdId);
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState(wallets[0]?.currency || "IDR");
   const [target, setTarget] = useState("");
-  const refresh = () =>
-    listGoals(householdId)
-      .then(setGoals)
-      .catch((e) => setError(String(e.message || e)));
-  useEffect(() => {
-    void refresh();
-  }, [householdId]);
   async function add(e: FormEvent) {
     e.preventDefault();
-    setError("");
+    state.setError("");
     try {
-      await createGoal(householdId, {
-        name,
-        currency,
-        targetAmountMinor: Number(target),
-      });
+      await state.create({ name, currency, targetAmountMinor: Number(target) });
       setName("");
       setTarget("");
-      await refresh();
+      await state.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "goal_error");
+      state.setError(e instanceof Error ? e.message : "goal_error");
     }
   }
   return (
@@ -56,147 +38,44 @@ export function GoalPanel({
           </p>
         </div>
       </div>
-      <form className="inline-form" onSubmit={add}>
-        <input
-          aria-label="Goal name"
-          placeholder="Goal name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          aria-label="Goal target"
-          type="number"
-          min="1"
-          placeholder="Target (minor units)"
-          value={target}
-          onChange={(e) => setTarget(e.target.value)}
-          required
-        />
-        <select
-          aria-label="Goal currency"
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-        >
-          {[...new Set(wallets.map((w) => w.currency))].map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-        <button type="submit">Create goal</button>
-      </form>
-      {error && (
+      <GoalForm
+        wallets={wallets}
+        name={name}
+        target={target}
+        currency={currency}
+        onName={setName}
+        onTarget={setTarget}
+        onCurrency={setCurrency}
+        onSubmit={add}
+      />
+      {state.error && (
         <p role="alert" aria-live="assertive">
-          {error}
+          {state.error}
         </p>
       )}
       <div className="stack">
-        {goals.map((g) => (
+        {state.goals.map((goal) => (
           <GoalCard
-            key={g.id}
-            goal={g}
+            key={goal.id}
+            goal={goal}
             wallets={wallets.filter(
-              (w) => w.status === "active" && w.currency === g.currency,
+              (w) => w.status === "active" && w.currency === goal.currency,
             )}
-            householdId={householdId}
-            refresh={refresh}
+            onReserve={async (id, walletId, amount) => {
+              await state.reserve(id, { walletId, amountMinor: amount });
+              await state.refresh();
+            }}
+            onRelease={async (id, walletId, amount) => {
+              await state.release(id, { walletId, amountMinor: amount });
+              await state.refresh();
+            }}
+            onArchive={async (id) => {
+              await state.archive(id);
+              await state.refresh();
+            }}
           />
         ))}
       </div>
     </section>
-  );
-}
-function GoalCard({
-  goal,
-  wallets,
-  householdId,
-  refresh,
-}: {
-  goal: GoalSummary;
-  wallets: Wallet[];
-  householdId: string;
-  refresh: () => void;
-}) {
-  const [walletId, setWalletId] = useState(wallets[0]?.id || "");
-  const [amount, setAmount] = useState("");
-  const [error, setError] = useState("");
-  const act = async (kind: "reserve" | "release") => {
-    setError("");
-    try {
-      const input = { walletId, amountMinor: Number(amount) };
-      if (kind === "reserve") await reserveGoal(householdId, goal.id, input);
-      else await releaseGoal(householdId, goal.id, input);
-      setAmount("");
-      refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "goal_error");
-    }
-  };
-  const pct = goal.targetAmountMinor
-    ? Math.min(100, Math.round((goal.reservedMinor / goal.targetAmountMinor) * 100))
-    : 0;
-  return (
-    <article className="budget-card">
-      <div className="budget-card__header">
-        <strong>{goal.name}</strong>
-        <span>{goal.status}</span>
-      </div>
-      <p>
-        {formatMoney(goal.reservedMinor, goal.currency)} reserved of{" "}
-        {formatMoney(goal.targetAmountMinor, goal.currency)} · {pct}%
-      </p>
-      <p>
-        <strong>{formatMoney(goal.remainingMinor, goal.currency)}</strong> remaining
-      </p>
-      <progress
-        max={goal.targetAmountMinor}
-        value={Math.min(goal.reservedMinor, goal.targetAmountMinor)}
-      />
-      {goal.status === "active" && (
-        <>
-          <div className="inline-form">
-            <select
-              aria-label={`Wallet for ${goal.name}`}
-              value={walletId}
-              onChange={(e) => setWalletId(e.target.value)}
-            >
-              {wallets.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-            <input
-              aria-label={`Amount for ${goal.name}`}
-              type="number"
-              min="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Amount"
-            />
-            <button
-              type="button"
-              onClick={() => void act("reserve")}
-              disabled={!walletId}
-            >
-              Reserve
-            </button>
-            <button
-              type="button"
-              onClick={() => void act("release")}
-              disabled={!walletId}
-            >
-              Release
-            </button>
-            <button
-              type="button"
-              onClick={() => void archiveGoal(householdId, goal.id).then(refresh)}
-            >
-              Archive
-            </button>
-          </div>
-          {error && <p role="alert">{error}</p>}
-        </>
-      )}
-    </article>
   );
 }
