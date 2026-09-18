@@ -95,6 +95,21 @@ func TestHouseholdWalletLedgerAndCapturePersistenceFlow(t *testing.T) {
 		t.Fatalf("capture review not persisted: %+v", reviewed)
 	}
 
+	walletActivity, err := service.ListWalletActivity(ctx, house.ID, first.ID)
+	if err != nil {
+		t.Fatalf("ListWalletActivity() pending error = %v", err)
+	}
+	if len(walletActivity) != 4 || walletActivity[0].Type != "pending_capture" || walletActivity[0].Status != "pending" {
+		t.Fatalf("expected linked pending capture first, got %+v", walletActivity)
+	}
+	otherWalletActivity, err := service.ListWalletActivity(ctx, house.ID, second.ID)
+	if err != nil {
+		t.Fatalf("ListWalletActivity(other wallet) error = %v", err)
+	}
+	if len(otherWalletActivity) != 1 || otherWalletActivity[0].Type != "transfer" {
+		t.Fatalf("expected only transfer for other wallet, got %+v", otherWalletActivity)
+	}
+
 	confirmed, err := service.ConfirmCapture(ctx, house.ID, captureID)
 	if err != nil {
 		t.Fatalf("ConfirmCapture() error = %v", err)
@@ -144,6 +159,13 @@ func TestHouseholdWalletLedgerAndCapturePersistenceFlow(t *testing.T) {
 	}
 	if len(activity) != 4 || activity[0].Note != "lunch" {
 		t.Fatalf("unexpected activity: %+v", activity)
+	}
+	walletActivity, err = service.ListWalletActivity(ctx, house.ID, first.ID)
+	if err != nil {
+		t.Fatalf("ListWalletActivity(confirmed) error = %v", err)
+	}
+	if len(walletActivity) != 4 || walletActivity[0].Type != "expense" || walletActivity[0].Status != "confirmed" {
+		t.Fatalf("expected confirmed capture in wallet activity, got %+v", walletActivity)
 	}
 
 	if _, err := service.CreateTransfer(ctx, house.ID, first.ID, first.ID, 100, when, ""); !errors.Is(err, ledger.ErrSelfTransfer) {

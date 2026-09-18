@@ -44,6 +44,20 @@ type Activity struct {
 	Note                string     `json:"note,omitempty"`
 }
 
+type WalletActivity struct {
+	ID                  uuid.UUID  `json:"id"`
+	Type                string     `json:"type"`
+	WalletID            *uuid.UUID `json:"walletId,omitempty"`
+	SourceWalletID      *uuid.UUID `json:"sourceWalletId,omitempty"`
+	DestinationWalletID *uuid.UUID `json:"destinationWalletId,omitempty"`
+	AmountMinor         int64      `json:"amountMinor"`
+	Currency            string     `json:"currency"`
+	OccurredAt          time.Time  `json:"occurredAt"`
+	Note                string     `json:"note,omitempty"`
+	Status              string     `json:"status,omitempty"`
+	CaptureID           *uuid.UUID `json:"captureId,omitempty"`
+}
+
 func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{pool: pool, now: time.Now}
 }
@@ -241,6 +255,36 @@ ORDER BY occurred_at DESC, id DESC LIMIT 50`, householdID)
 	for rows.Next() {
 		var item Activity
 		if err := rows.Scan(&item.ID, &item.Type, &item.WalletID, &item.SourceWalletID, &item.DestinationWalletID, &item.AmountMinor, &item.Currency, &item.OccurredAt, &item.Note); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Service) ListWalletActivity(ctx context.Context, householdID, walletID uuid.UUID) ([]WalletActivity, error) {
+	rows, err := s.pool.Query(ctx, `
+SELECT id, kind AS type, wallet_id, NULL::uuid, NULL::uuid, amount_minor, currency, occurred_at, note, 'confirmed', NULL::uuid
+FROM transactions
+WHERE household_id=$1 AND wallet_id=$2
+UNION ALL
+SELECT id, 'transfer' AS type, NULL::uuid, source_wallet_id, destination_wallet_id, amount_minor, currency, occurred_at, note, 'confirmed', NULL::uuid
+FROM transfers
+WHERE household_id=$1 AND (source_wallet_id=$2 OR destination_wallet_id=$2)
+UNION ALL
+SELECT c.id, 'pending_capture' AS type, c.wallet_id, NULL::uuid, NULL::uuid, c.amount_minor, w.currency, c.captured_at, c.note, c.status, c.id
+FROM transaction_captures c
+JOIN wallets w ON w.id=c.wallet_id AND w.household_id=c.household_id
+WHERE c.household_id=$1 AND c.wallet_id=$2 AND c.status='pending'
+ORDER BY occurred_at DESC, id DESC`, householdID, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]WalletActivity, 0)
+	for rows.Next() {
+		var item WalletActivity
+		if err := rows.Scan(&item.ID, &item.Type, &item.WalletID, &item.SourceWalletID, &item.DestinationWalletID, &item.AmountMinor, &item.Currency, &item.OccurredAt, &item.Note, &item.Status, &item.CaptureID); err != nil {
 			return nil, err
 		}
 		items = append(items, item)

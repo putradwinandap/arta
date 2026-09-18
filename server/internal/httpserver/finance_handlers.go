@@ -106,6 +106,27 @@ func (h financeHandlers) getWallet(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, v)
 }
 
+func (h financeHandlers) listWalletActivity(w http.ResponseWriter, r *http.Request) {
+	hID, ok := pathUUID(w, r, "householdID")
+	if !ok {
+		return
+	}
+	wID, ok := pathUUID(w, r, "walletID")
+	if !ok {
+		return
+	}
+	if _, err := h.service.GetWallet(r.Context(), hID, wID); err != nil {
+		handleFinanceError(w, err)
+		return
+	}
+	items, err := h.service.ListWalletActivity(r.Context(), hID, wID)
+	if err != nil {
+		handleFinanceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"activity": items})
+}
+
 func (h financeHandlers) updateWallet(w http.ResponseWriter, r *http.Request) {
 	hID, ok := pathUUID(w, r, "householdID")
 	if !ok {

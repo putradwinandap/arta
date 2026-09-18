@@ -4,8 +4,10 @@ import { BudgetMount } from "./BudgetMount";
 import { GoalMount } from "./GoalMount";
 import { ReconciliationMount } from "./ReconciliationMount";
 import { BackupRestoreMount } from "./BackupRestoreMount";
+import { WalletTransactionsPage } from "./pages/WalletTransactionsPage";
 
 function routeFor(pathname: string) {
+  if (/^\/wallets\/[^/]+\/transactions$/.test(pathname)) return "wallet-transactions";
   if (pathname === "/transactions") return "transactions";
   if (pathname === "/wallets" || pathname === "/wallet") return "wallets";
   if (pathname === "/budgets") return "budgets";
@@ -27,6 +29,7 @@ export function AppRouter() {
   if (route === "reconciliation") return <ReconciliationMount />;
   if (route === "family") return <BackupRestoreMount />;
   if (route === "wallets") return <WalletsPage />;
+  if (route === "wallet-transactions") return <WalletTransactionsPage />;
   if (route === "transactions") return <TransactionsPage />;
   return <DashboardPage />;
 }
