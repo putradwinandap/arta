@@ -130,6 +130,8 @@ When an earlier horizontal foundation already exists, the next relevant slice sh
 - Pull requests should reference their Issue.
 - Do not mix unrelated refactors with feature work.
 - Do not mark work complete solely because code was generated; completion requires verification against acceptance criteria.
+- Before pushing or merging a pull request, fetch the latest `origin/main` and verify that the task branch merges cleanly with it. If `main` moved after that check, re-check mergeability immediately before merging.
+- Prefer repository-supported auto-merge after required checks pass; do not bypass branch protection with administrator merge merely to avoid resolving a conflict.
 
 ## Financial domain invariants
 
