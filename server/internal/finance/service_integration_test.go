@@ -79,21 +79,6 @@ func TestHouseholdWalletLedgerAndCapturePersistenceFlow(t *testing.T) {
 		t.Fatalf("stable capture id must be idempotent, got %+v", duplicate)
 	}
 
-	walletActivity, err := service.ListWalletActivity(ctx, house.ID, first.ID)
-	if err != nil {
-		t.Fatalf("ListWalletActivity() pending error = %v", err)
-	}
-	if len(walletActivity) != 4 || walletActivity[0].Type != "pending_capture" || walletActivity[0].Status != "pending" {
-		t.Fatalf("expected linked pending capture first, got %+v", walletActivity)
-	}
-	otherWalletActivity, err := service.ListWalletActivity(ctx, house.ID, second.ID)
-	if err != nil {
-		t.Fatalf("ListWalletActivity(other wallet) error = %v", err)
-	}
-	if len(otherWalletActivity) != 1 || otherWalletActivity[0].Type != "transfer" {
-		t.Fatalf("expected only transfer for other wallet, got %+v", otherWalletActivity)
-	}
-
 	totalsBeforeConfirm, err := service.HouseholdTotals(ctx, house.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -108,6 +93,21 @@ func TestHouseholdWalletLedgerAndCapturePersistenceFlow(t *testing.T) {
 	}
 	if reviewed.WalletID == nil || *reviewed.WalletID != first.ID || reviewed.Kind == nil || *reviewed.Kind != ledger.KindExpense {
 		t.Fatalf("capture review not persisted: %+v", reviewed)
+	}
+
+	walletActivity, err := service.ListWalletActivity(ctx, house.ID, first.ID)
+	if err != nil {
+		t.Fatalf("ListWalletActivity() pending error = %v", err)
+	}
+	if len(walletActivity) != 4 || walletActivity[0].Type != "pending_capture" || walletActivity[0].Status != "pending" {
+		t.Fatalf("expected linked pending capture first, got %+v", walletActivity)
+	}
+	otherWalletActivity, err := service.ListWalletActivity(ctx, house.ID, second.ID)
+	if err != nil {
+		t.Fatalf("ListWalletActivity(other wallet) error = %v", err)
+	}
+	if len(otherWalletActivity) != 1 || otherWalletActivity[0].Type != "transfer" {
+		t.Fatalf("expected only transfer for other wallet, got %+v", otherWalletActivity)
 	}
 
 	confirmed, err := service.ConfirmCapture(ctx, house.ID, captureID)
