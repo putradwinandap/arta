@@ -1,104 +1,12 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import {
-  createBudget,
-  listBudgets,
-  updateBudgetRenewal,
-  type BudgetSummary,
-  type Wallet,
-} from "./lib/api";
-import { formatMoney } from "./components/financial/shared/currency";
+import type { Wallet } from "./lib/api";
+import { BudgetForm } from "./components/budgets/BudgetForm";
+import { BudgetList } from "./components/budgets/BudgetList";
+import { useBudgets } from "./components/budgets/useBudgets";
 
 type Props = { householdId: string; wallets: Wallet[]; refreshKey: number };
-function dateOnly(value: string) {
-  return value.slice(0, 10);
-}
-function localDate(value: Date) {
-  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-}
 
 export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
-  const currencies = useMemo(
-    () => [...new Set(wallets.map((wallet) => wallet.currency))],
-    [wallets],
-  );
-  const today = new Date();
-  const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-  const monthEnd = localDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
-  const [items, setItems] = useState<BudgetSummary[]>([]);
-  const [currency, setCurrency] = useState(currencies[0] ?? "IDR");
-  const [periodStart, setPeriodStart] = useState(monthStart);
-  const [periodEnd, setPeriodEnd] = useState(monthEnd);
-  const [amount, setAmount] = useState("");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [autoRenew, setAutoRenew] = useState(false);
-
-  async function refresh() {
-    try {
-      setError("");
-      setItems(await listBudgets(householdId));
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message.replaceAll("_", " ")
-          : "Could not load budgets.",
-      );
-    }
-  }
-  useEffect(() => {
-    void refresh();
-  }, [householdId, refreshKey]);
-  useEffect(() => {
-    if (currencies.length && !currencies.includes(currency)) setCurrency(currencies[0]);
-  }, [currencies, currency]);
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setSaving(true);
-    setError("");
-    try {
-      await createBudget(householdId, {
-        currency,
-        periodStart,
-        periodEnd,
-        amountMinor: Number(amount),
-        autoRenew,
-        ...(autoRenew ? { cadence: "monthly" } : {}),
-      });
-      setAmount("");
-      setAutoRenew(false);
-      await refresh();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message.replaceAll("_", " ")
-          : "Could not create budget.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function toggleRenewal(item: BudgetSummary) {
-    setSaving(true);
-    setError("");
-    try {
-      await updateBudgetRenewal(householdId, item.id, {
-        autoRenew: !item.autoRenew,
-        ...(item.autoRenew ? {} : { cadence: "monthly" }),
-      });
-      await refresh();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message.replaceAll("_", " ")
-          : "Could not update auto-renew.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
+  const state = useBudgets(householdId, wallets, refreshKey);
   return (
     <section className="panel budget-panel">
       <div className="section-heading">
@@ -110,131 +18,40 @@ export function BudgetPanel({ householdId, wallets, refreshKey }: Props) {
             pending captures stay outside the budget.
           </p>
         </div>
-        <button className="secondary" type="button" onClick={() => void refresh()}>
+        <button
+          className="secondary"
+          type="button"
+          onClick={() => void state.refresh()}
+        >
           Refresh spending
         </button>
       </div>
-      {error && (
+      {state.error && (
         <p className="alert" role="alert">
-          {error}
+          {state.error}
         </p>
       )}
       <div className="budget-grid">
-        <form className="stack-form" onSubmit={submit}>
-          <label>
-            Currency
-            <select
-              aria-label="Budget currency"
-              value={currency}
-              onChange={(event) => setCurrency(event.target.value)}
-            >
-              {(currencies.length ? currencies : ["IDR"]).map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Period start
-            <input
-              aria-label="Budget period start"
-              type="date"
-              value={periodStart}
-              onChange={(event) => setPeriodStart(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Period end
-            <input
-              aria-label="Budget period end"
-              type="date"
-              value={periodEnd}
-              onChange={(event) => setPeriodEnd(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Budget amount
-            <input
-              aria-label="Budget amount"
-              type="number"
-              min="1"
-              step="1"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            <input
-              aria-label="Auto-renew budget"
-              type="checkbox"
-              checked={autoRenew}
-              onChange={(event) => setAutoRenew(event.target.checked)}
-            />{" "}
-            Auto-renew monthly
-          </label>
-          <button disabled={saving}>{saving ? "Creating…" : "Create budget"}</button>
-        </form>
-        <div className="budget-list" aria-live="polite">
-          {items.length === 0 ? (
-            <div className="empty-state">
-              <p>No budgets yet.</p>
-            </div>
-          ) : (
-            items.map((item) => {
-              const ratio =
-                item.amountMinor > 0
-                  ? Math.min(
-                      100,
-                      Math.round((item.spentMinor / item.amountMinor) * 100),
-                    )
-                  : 0;
-              return (
-                <article className="budget-card" key={item.id}>
-                  <div className="section-heading">
-                    <div>
-                      <strong>
-                        {dateOnly(item.periodStart)} → {dateOnly(item.periodEnd)}
-                      </strong>
-                      <p className="muted">
-                        {item.currency} ·{" "}
-                        {item.autoRenew ? "Monthly auto-renew on" : "Auto-renew off"}
-                      </p>
-                    </div>
-                    <strong>{ratio}%</strong>
-                  </div>
-                  <progress
-                    max={item.amountMinor}
-                    value={Math.min(item.spentMinor, item.amountMinor)}
-                  />
-                  <div className="budget-totals">
-                    <span>
-                      Spent{" "}
-                      <strong>{formatMoney(item.spentMinor, item.currency)}</strong>
-                    </span>
-                    <span>
-                      Remaining{" "}
-                      <strong>{formatMoney(item.remainingMinor, item.currency)}</strong>
-                    </span>
-                    <span>
-                      Limit{" "}
-                      <strong>{formatMoney(item.amountMinor, item.currency)}</strong>
-                    </span>
-                  </div>
-                  <button
-                    className="secondary"
-                    type="button"
-                    disabled={saving}
-                    onClick={() => void toggleRenewal(item)}
-                  >
-                    {item.autoRenew ? "Disable auto-renew" : "Enable auto-renew"}
-                  </button>
-                </article>
-              );
-            })
-          )}
-        </div>
+        <BudgetForm
+          currencies={state.currencies}
+          currency={state.currency}
+          setCurrency={state.setCurrency}
+          periodStart={state.periodStart}
+          setPeriodStart={state.setPeriodStart}
+          periodEnd={state.periodEnd}
+          setPeriodEnd={state.setPeriodEnd}
+          amount={state.amount}
+          setAmount={state.setAmount}
+          autoRenew={state.autoRenew}
+          setAutoRenew={state.setAutoRenew}
+          saving={state.saving}
+          onSubmit={state.submit}
+        />
+        <BudgetList
+          items={state.items}
+          saving={state.saving}
+          onToggle={(item) => void state.toggleRenewal(item)}
+        />
       </div>
     </section>
   );
