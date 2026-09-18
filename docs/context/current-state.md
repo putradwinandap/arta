@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-09-17
+Last updated: 2026-09-18
 
 ## Current phase
 
@@ -54,7 +54,9 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 - Issue #56 / PR #66: centralized money formatting and frontend audit, merged and closed.
 - Issue #57 / PR #67: Quick Capture Inbox decomposition into focused form, outbox, and formatting modules, merged and closed.
 - Issue #58 / PR #68: reconciliation and financial goals decomposition into focused forms, lists/cards, actions, and hooks, merged and closed.
+- Issue #59 / PR #72: authentication UI and session state decomposition, merged and closed.
 - Issue #60 / PR #64: FinancialWorkspace orchestration split, merged and closed.
+- Issue #61 / PR #73: household overview and budget module decomposition, merged and closed.
 - Issue #62 / PR #65: centralized auth, backup, and household-join API access, merged and closed.
 - Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`.
 
@@ -85,15 +87,15 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 
 ## Current execution target
 
-The stabilization baseline and the Issue #50 budget-evolution slice are complete. Frontend maintainability is now in progress: Issues #55, #56, #57, #58, #60, and #62 are Done, while Issues #59 and #61 remain Missing. The current execution target is Issue #59, followed by Issue #61.
+The stabilization baseline, Issue #50 budget-evolution slice, and frontend maintainability sequence are complete. Issues #55, #56, #57, #58, #59, #60, #61, and #62 are Done. The next product target is pending roadmap and Issue triage.
 
 ## Capability checkpoint
 
 This checkpoint distinguishes delivered capability from deliberate partial scope and future work:
 
-- **Done:** authentication and household membership; wallet and trusted transaction ledger; transfers; Quick Capture and Transaction Inbox; budgets including overlapping periods and explicit expense assignment; reserved-fund goals; reconciliation foundation; household overview/reporting; backup/restore; supported self-hosted startup; offline-authenticated reload and capture recovery; responsive workflow navigation; frontend maintainability Issues #55, #56, #57, #58, #60, and #62.
+- **Done:** authentication and household membership; wallet and trusted transaction ledger; transfers; Quick Capture and Transaction Inbox; budgets including overlapping periods and explicit expense assignment; reserved-fund goals; reconciliation foundation; household overview/reporting; backup/restore; supported self-hosted startup; offline-authenticated reload and capture recovery; responsive workflow navigation; frontend maintainability Issues #55, #56, #57, #58, #59, #60, #61, and #62.
 - **Partial:** reconciliation assistance for linking missing activity; budget evolution beyond Issue #50 (scheduler/background renewal, richer reassignment controls, and category/envelope models); offline synchronization beyond the capture outbox; packaging beyond the supported source-checkout/Compose path; permission roles beyond owner/member.
-- **Missing / future:** frontend maintainability Issues #59 and #61; Android notification-based capture exploration (Issue #9); recurring transactions; duplicate-detection improvements; broader integrations and advanced reporting.
+- **Missing / future:** Android notification-based capture exploration (Issue #9); recurring transactions; duplicate-detection improvements; broader integrations and advanced reporting.
 
 Issue #33 — **Stabilize authentication, household UX, navigation, and dashboard information architecture** — is complete through Issues #34–#40. Issue #37 — **Build responsive Arta app shell and integrate account/session controls** — is complete and merged via PR #46 (`ad341d4`). Issue #38 — **Separate financial management workflows into dedicated pages** — is complete. Issue #39 — **Redesign Dashboard as a focused household financial overview** — is complete and merged via PR #48. Issue #40 — **Run responsive, accessibility, and UX stabilization pass** — is complete and merged via PR #49.
 
@@ -116,7 +118,6 @@ Issue #44 — **Support offline-authenticated reload and cached household mode**
 
 ## Next execution steps
 
-1. Keep the stabilization baseline maintained after Issues #33–#40 completion.
-2. Execute Issues #59 and #61 through scoped PRs; Issues #55, #56, #57, #58, #60, and #62 are Done.
-3. Reconcile this status after each maintainability slice and choose the next product target through roadmap/issue triage afterward.
-4. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.
+1. Keep the stabilization and frontend maintainability baseline maintained.
+2. Reconcile roadmap, MVP, and open Issues to select the next product slice.
+3. Revisit Issue #9 only when Android capture becomes an explicitly scheduled priority.
