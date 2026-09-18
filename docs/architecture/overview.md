@@ -154,7 +154,7 @@ Logical modules will grow around real behavior:
 - Budgets
 - Goals
 - Reporting
-- Reconciliation (future)
+- Reconciliation
 - Capture integrations (future)
 
 These are domain boundaries, not separately deployed services.
