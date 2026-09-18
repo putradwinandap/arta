@@ -63,13 +63,17 @@ export function WalletSection(p: WalletSectionProps) {
                     : walletTypes.find((x) => x.value === w.type)?.label}
                 </span>
                 <a href={`/wallets/${w.id}/transactions`} className="wallet-link">
-                  <h3>{w.name}</h3>
-                  <p className="wallet-balance">
-                    {formatMoney(
-                      p.balanceByWallet.get(w.id)?.amountMinor ?? 0,
-                      w.currency,
-                    )}
-                  </p>
+                  <span className="wallet-link-copy">
+                    <h3>{w.name}</h3>
+                    <p className="wallet-balance">
+                      {formatMoney(
+                        p.balanceByWallet.get(w.id)?.amountMinor ?? 0,
+                        w.currency,
+                      )}
+                    </p>
+                    <span className="wallet-link-hint">View transactions</span>
+                  </span>
+                  <span className="wallet-link-arrow" aria-hidden="true">→</span>
                 </a>
                 {w.status === "active" && (
                   <div className="wallet-actions">

@@ -58,6 +58,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 - Issue #60 / PR #64: FinancialWorkspace orchestration split, merged and closed.
 - Issue #61 / PR #73: household overview and budget module decomposition, merged and closed.
 - Issue #62 / PR #65: centralized auth, backup, and household-join API access, merged and closed.
+- Wallet transaction history slice: a wallet-scoped read-only history page and API now expose confirmed income/expense activity, transfers, and balance adjustments from the trusted ledger. Wallet cards link directly to the history view; pending captures remain excluded until confirmation.
 - Installer recovery hardening: Windows PowerShell 5.1 compatibility and guarded destructive reset behavior are implemented on `main`.
 
 ## Current engineering foundation
@@ -75,6 +76,7 @@ Issue #9 (Android notification-based transaction capture research) remains inten
 - Offline cache hardening: auth and household snapshots are invalidated on logout, explicit HTTP 401, and authenticated user changes; snapshots carry the active user ID; local captures remain retained when retry receives 401 and are eligible for a later retry after authentication recovery.
 - Responsive app shell (Issue #37, PR #46, merged `ad341d4`): desktop sidebar and mobile menu now expose account/session controls, active household context, logout, and scoped destinations for dashboard, transactions, wallets, budgets, goals, reconciliation, and family/settings. Navigation controls preserve native keyboard/focus behavior, and representative desktop/mobile shell tests plus full E2E coverage are green.
 - Dedicated financial workflow pages (Issue #38): Transactions & Inbox, Wallets, Budgets, Financial Goals, Reconciliation, and Family & Settings have clear routes and scoped surfaces. Dashboard no longer presents unrelated management forms; route titles and browser history state remain synchronized. Existing create/manage/review actions and responsive shell behavior remain covered by frontend and E2E verification.
+- Wallet history navigation: each wallet card exposes a clear, keyboard-focusable transaction-history affordance with responsive mobile layout and hover/focus feedback. The history view is read-only and derives its entries from the existing trusted ledger.
 - Dashboard overview (Issue #39 / PR #48, complete): the dashboard uses derived finance, capture, budget, goal, and reconciliation data to show physical/reserved/available funds, pending review, summary health, recent activity, useful empty/error states, and links to dedicated workflows. Management forms remain on their dedicated pages. Frontend tests, production build, Docker E2E, and CI all passed before merge.
 - UX stabilization (Issue #40 / PR #49, complete): responsive navigation supports keyboard dismissal and clear focus indicators; dashboard, budget, goal, backup/restore, and reconciliation states expose consistent status/error semantics; reconciliation has explicit loading, empty, and accessible form states. Frontend tests, production build, Docker E2E, and all CI lanes passed before merge.
 
@@ -93,7 +95,7 @@ The stabilization baseline, Issue #50 budget-evolution slice, and frontend maint
 
 This checkpoint distinguishes delivered capability from deliberate partial scope and future work:
 
-- **Done:** authentication and household membership; wallet and trusted transaction ledger; transfers; Quick Capture and Transaction Inbox; budgets including overlapping periods and explicit expense assignment; reserved-fund goals; reconciliation foundation; household overview/reporting; backup/restore; supported self-hosted startup; offline-authenticated reload and capture recovery; responsive workflow navigation; frontend maintainability Issues #55, #56, #57, #58, #59, #60, #61, and #62.
+- **Done:** authentication and household membership; wallet and trusted transaction ledger; wallet-scoped transaction history; transfers; Quick Capture and Transaction Inbox; budgets including overlapping periods and explicit expense assignment; reserved-fund goals; reconciliation foundation; household overview/reporting; backup/restore; supported self-hosted startup; offline-authenticated reload and capture recovery; responsive workflow navigation; frontend maintainability Issues #55, #56, #57, #58, #59, #60, #61, and #62.
 - **Partial:** reconciliation assistance for linking missing activity; budget evolution beyond Issue #50 (scheduler/background renewal, richer reassignment controls, and category/envelope models); offline synchronization beyond the capture outbox; packaging beyond the supported source-checkout/Compose path; permission roles beyond owner/member.
 - **Missing / future:** Android notification-based capture exploration (Issue #9); recurring transactions; duplicate-detection improvements; broader integrations and advanced reporting.
 

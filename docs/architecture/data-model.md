@@ -1,6 +1,6 @@
 # Data Model
 
-Status: Household, wallet, confirmed transaction, wallet transfer, transaction capture/Inbox, MVP budget, and reserved-fund financial goal models are implemented.
+Status: Household, wallet, confirmed transaction, per-wallet transaction history, wallet transfer, transaction capture/Inbox, MVP budget, and reserved-fund financial goal models are implemented.
 
 ## Household
 
@@ -74,6 +74,10 @@ income
 ```
 
 Pending captures are not part of this calculation. There is no mutable wallet balance column. Reconciliation/opening-balance behavior remains future work.
+
+### Wallet transaction history
+
+The wallet detail history is a read-only projection of trusted financial activity for one wallet. It includes confirmed income and expense transactions, incoming and outgoing transfers, and balance adjustments, ordered by occurrence time. Pending captures remain excluded until they are reviewed and confirmed. The history endpoint does not introduce a second financial source of truth or a mutable balance field.
 
 ## Transaction
 
