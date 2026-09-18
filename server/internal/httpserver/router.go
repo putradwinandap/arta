@@ -80,6 +80,7 @@ func New(pool *pgxpool.Pool) http.Handler {
 				r.Post("/", h.createWallet)
 				r.Get("/", h.listWallets)
 				r.Get("/{walletID}", h.getWallet)
+				r.Get("/{walletID}/activity", h.listWalletActivity)
 				r.Patch("/{walletID}", h.updateWallet)
 				r.Post("/{walletID}/archive", h.archiveWallet)
 				r.Post("/{walletID}/reconcile", h.createReconciliation)

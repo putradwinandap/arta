@@ -38,6 +38,11 @@ export type Activity = {
   occurredAt: string;
   note?: string;
 };
+export type WalletActivity = Omit<Activity, "type"> & {
+  type: Activity["type"] | "pending_capture";
+  status?: "confirmed" | "pending";
+  captureId?: string;
+};
 export type TransactionCapture = {
   id: string;
   householdId: string;
@@ -244,6 +249,16 @@ export function createTransfer(
 }
 export function getFinanceOverview(h: string) {
   return request<FinanceOverview>(`/api/households/${h}/finance`);
+}
+export function getWallet(h: string, walletId: string) {
+  return request<Wallet>(`/api/households/${h}/wallets/${walletId}`);
+}
+export async function listWalletActivity(h: string, walletId: string) {
+  return (
+    await request<{ activity: WalletActivity[] }>(
+      `/api/households/${h}/wallets/${walletId}/activity`,
+    )
+  ).activity;
 }
 export function createCapture(
   h: string,

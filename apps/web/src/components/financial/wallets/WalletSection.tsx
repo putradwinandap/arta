@@ -62,13 +62,15 @@ export function WalletSection(p: WalletSectionProps) {
                     ? "Archived"
                     : walletTypes.find((x) => x.value === w.type)?.label}
                 </span>
-                <h3>{w.name}</h3>
-                <p className="wallet-balance">
-                  {formatMoney(
-                    p.balanceByWallet.get(w.id)?.amountMinor ?? 0,
-                    w.currency,
-                  )}
-                </p>
+                <a href={`/wallets/${w.id}/transactions`} className="wallet-link">
+                  <h3>{w.name}</h3>
+                  <p className="wallet-balance">
+                    {formatMoney(
+                      p.balanceByWallet.get(w.id)?.amountMinor ?? 0,
+                      w.currency,
+                    )}
+                  </p>
+                </a>
                 {w.status === "active" && (
                   <div className="wallet-actions">
                     <button
