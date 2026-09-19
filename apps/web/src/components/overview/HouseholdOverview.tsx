@@ -55,7 +55,7 @@ export function HouseholdOverview({
             </div>
           ) : (
             budgets.map((budget) => (
-              <article className="card" key={budget.id}>
+              <article className="surface-card card" key={budget.id}>
                 <strong>{budget.currency} budget</strong>
                 <p>
                   {formatMoney(budget.spentMinor, budget.currency)} spent of{" "}
@@ -83,7 +83,7 @@ export function HouseholdOverview({
             </div>
           ) : (
             goals.map((goal) => (
-              <article className="card" key={goal.id}>
+              <article className="surface-card card" key={goal.id}>
                 <strong>{goal.name}</strong>
                 <p>
                   {formatMoney(goal.reservedMinor, goal.currency)} reserved of{" "}

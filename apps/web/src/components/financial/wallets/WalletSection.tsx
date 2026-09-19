@@ -11,7 +11,7 @@ export function WalletSection(p: WalletSectionProps) {
         <div className="wallet-list">
           {[...p.activeWallets, ...p.archivedWallets].map((w) =>
             w.status === "active" && p.editingWalletId === w.id ? (
-              <article className="wallet-card" key={w.id}>
+              <article className="surface-card wallet-card" key={w.id}>
                 <form
                   className="edit-form"
                   onSubmit={(e) => p.handleUpdateWallet(e, w.id)}
@@ -54,7 +54,7 @@ export function WalletSection(p: WalletSectionProps) {
               </article>
             ) : (
               <article
-                className={`wallet-card ${w.status === "archived" ? "archived" : ""}`}
+                className={`surface-card wallet-card ${w.status === "archived" ? "archived" : ""}`}
                 key={w.id}
               >
                 <span className="wallet-type">
@@ -73,7 +73,9 @@ export function WalletSection(p: WalletSectionProps) {
                     </p>
                     <span className="wallet-link-hint">View transactions</span>
                   </span>
-                  <span className="wallet-link-arrow" aria-hidden="true">→</span>
+                  <span className="wallet-link-arrow" aria-hidden="true">
+                    →
+                  </span>
                 </a>
                 {w.status === "active" && (
                   <div className="wallet-actions">

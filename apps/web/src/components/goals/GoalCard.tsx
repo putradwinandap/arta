@@ -28,7 +28,7 @@ export function GoalCard({
     ? Math.min(100, Math.round((goal.reservedMinor / goal.targetAmountMinor) * 100))
     : 0;
   return (
-    <article className="budget-card">
+    <article className="surface-card budget-card">
       <div className="budget-card__header">
         <strong>{goal.name}</strong>
         <span>{goal.status}</span>

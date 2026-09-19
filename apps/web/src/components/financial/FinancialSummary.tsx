@@ -4,15 +4,15 @@ import { formatMoney } from "./shared/currency";
 export function FinancialSummary({ overview }: { overview: FinanceOverview }) {
   return (
     <section className="finance-summary">
-      <article className="summary-card">
+      <article className="surface-card summary-card">
         <span>Income</span>
         <strong>{formatMoney(overview.totals.incomeMinor)}</strong>
       </article>
-      <article className="summary-card">
+      <article className="surface-card summary-card">
         <span>Expense</span>
         <strong>{formatMoney(overview.totals.expenseMinor)}</strong>
       </article>
-      <article className="summary-card">
+      <article className="surface-card summary-card">
         <span>Net</span>
         <strong>
           {formatMoney(overview.totals.incomeMinor - overview.totals.expenseMinor)}

@@ -14,7 +14,7 @@ export function ReconciliationItem({
   onAdjust: () => void;
 }) {
   return (
-    <article className="card">
+    <article className="surface-card card">
       <strong>
         {wallets.find((w) => w.id === item.walletId)?.name || "Wallet"} · {item.status}
       </strong>

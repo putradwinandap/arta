@@ -16,7 +16,7 @@ export function BudgetCard({
       ? Math.min(100, Math.round((item.spentMinor / item.amountMinor) * 100))
       : 0;
   return (
-    <article className="budget-card">
+    <article className="surface-card budget-card">
       <div className="section-heading">
         <div>
           <strong>
